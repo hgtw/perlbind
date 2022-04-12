@@ -1,0 +1,14 @@
+*
+!.gitignore
+!.editorconfig
+!CMakeLists.txt
+!LICENSE
+
+!include/
+!include/**
+
+!src/
+!src/*
+
+!test/
+!test/*

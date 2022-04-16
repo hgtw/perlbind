@@ -245,13 +245,6 @@ struct scalar_proxy
     return *this;
   }
 
-  template <typename T, std::enable_if_t<!std::is_convertible<T, scalar>::value, bool> = true>
-  scalar_proxy& operator=(T value)
-  {
-    static_assert(0, "Cannot assign value. If nesting an array or hash use a reference().");
-    return *this;
-  }
-
   // todo: nested proxy[]
 
 private:

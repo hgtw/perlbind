@@ -6,20 +6,7 @@ namespace perlbind { namespace stack {
 
 // perl stack reader to convert types, croaks if perl stack value isn't type compatible
 template <typename T, typename = void>
-struct read_as
-{
-  static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
-  {
-    static_assert(0, "Do not know how to check perl stack for compatibility with type 'T'");
-    return false;
-  };
-
-  static T get(PerlInterpreter* my_perl, int i, int ax, int items)
-  {
-    static_assert(0, "Do not know how to convert to type 'T' from the perl stack");
-    return T{};
-  };
-};
+struct read_as;
 
 template <typename T>
 struct read_as<T, std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>::value>>

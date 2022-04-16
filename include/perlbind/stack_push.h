@@ -49,9 +49,6 @@ struct pusher
     m_pushed += count;
   }
 
-  template <typename T, std::enable_if_t<!std::is_arithmetic<T>::value && !std::is_pointer<T>::value && !std::is_enum<T>::value, bool> = true>
-  void push(T value) { static_assert(0, "Do not know how to push type 'T' to perl stack"); }
-
   template <typename T, std::enable_if_t<detail::is_signed_integral_or_enum<T>::value, bool> = true>
   void push(T value) { mXPUSHi(static_cast<IV>(value)); ++m_pushed; }
 

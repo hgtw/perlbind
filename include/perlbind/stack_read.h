@@ -8,13 +8,13 @@ namespace perlbind { namespace stack {
 template <typename T, typename = void>
 struct read_as
 {
-  static bool check(PerlInterpreter* my_perl, int i, int ax)
+  static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
     static_assert(0, "Do not know how to check perl stack for compatibility with type 'T'");
     return false;
   };
 
-  static T get(PerlInterpreter* my_perl, int i, int ax)
+  static T get(PerlInterpreter* my_perl, int i, int ax, int items)
   {
     static_assert(0, "Do not know how to convert to type 'T' from the perl stack");
     return T{};
@@ -24,14 +24,14 @@ struct read_as
 template <typename T>
 struct read_as<T, std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>::value>>
 {
-  static bool check(PerlInterpreter* my_perl, int i, int ax)
+  static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
     return SvIOK(ST(i));
   }
 
-  static T get(PerlInterpreter* my_perl, int i, int ax)
+  static T get(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    if (!check(my_perl, i, ax))
+    if (!check(my_perl, i, ax, items))
     {
       Perl_croak(aTHX_ "expected argument %d to be an integer", i+1);
     }
@@ -42,14 +42,14 @@ struct read_as<T, std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>
 template <typename T>
 struct read_as<T, std::enable_if_t<std::is_floating_point<T>::value>>
 {
-  static bool check(PerlInterpreter* my_perl, int i, int ax)
+  static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
     return SvNOK(ST(i));
   }
 
-  static T get(PerlInterpreter* my_perl, int i, int ax)
+  static T get(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    if (!check(my_perl, i, ax))
+    if (!check(my_perl, i, ax, items))
     {
       Perl_croak(aTHX_ "expected argument %d to be a floating point", i+1);
     }
@@ -60,14 +60,14 @@ struct read_as<T, std::enable_if_t<std::is_floating_point<T>::value>>
 template <>
 struct read_as<const char*>
 {
-  static bool check(PerlInterpreter* my_perl, int i, int ax)
+  static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
     return SvPOK(ST(i));
   }
 
-  static const char* get(PerlInterpreter* my_perl, int i, int ax)
+  static const char* get(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    if (!check(my_perl, i, ax))
+    if (!check(my_perl, i, ax, items))
     {
       Perl_croak(aTHX_ "expected argument %d to be a string", i+1);
     }
@@ -83,14 +83,14 @@ struct read_as<std::string> : read_as<const char*>
 template <>
 struct read_as<void*>
 {
-  static bool check(PerlInterpreter* my_perl, int i, int ax)
+  static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
     return SvROK(ST(i));
   }
 
-  static void* get(PerlInterpreter* my_perl, int i, int ax)
+  static void* get(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    if (!check(my_perl, i, ax))
+    if (!check(my_perl, i, ax, items))
     {
       Perl_croak(aTHX_ "expected argument %d to be a reference to an object", i+1);
     }
@@ -103,16 +103,16 @@ struct read_as<void*>
 template <typename T>
 struct read_as<T, std::enable_if_t<std::is_pointer<T>::value>>
 {
-  static bool check(PerlInterpreter* my_perl, int i, int ax)
+  static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
     auto typemap = detail::typemap::get(my_perl);
     auto it = typemap->find(std::type_index(typeid(T)));
     return (it != typemap->end()) && SvROK(ST(i)) && sv_derived_from(ST(i), it->second.c_str());
   }
 
-  static T get(PerlInterpreter* my_perl, int i, int ax)
+  static T get(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    if (!check(my_perl, i, ax))
+    if (!check(my_perl, i, ax, items))
     {
       // would prefer to check for unregistered types at compile time (not possible?)
       auto typemap = detail::typemap::get(my_perl);
@@ -132,14 +132,14 @@ struct read_as<T, std::enable_if_t<std::is_pointer<T>::value>>
 template <>
 struct read_as<SV*>
 {
-  static bool check(PerlInterpreter* my_perl, int i, int ax)
+  static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    return ST(i) != nullptr;
+    return i < items;
   }
 
-  static SV* get(PerlInterpreter* my_perl, int i, int ax)
+  static SV* get(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    if (!check(my_perl, i, ax))
+    if (!check(my_perl, i, ax, items))
     {
       Perl_croak(aTHX_ "expected argument %d to be valid scalar value", i+1);
     }
@@ -151,14 +151,14 @@ struct read_as<SV*>
 template <>
 struct read_as<scalar>
 {
-  static bool check(PerlInterpreter* my_perl, int i, int ax)
+  static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
     return (SvROK(ST(i)) && SvTYPE(SvRV(ST(i))) < SVt_PVAV) || SvTYPE(ST(i)) < SVt_PVAV;
   }
 
-  static scalar get(PerlInterpreter* my_perl, int i, int ax)
+  static scalar get(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    if (!check(my_perl, i, ax))
+    if (!check(my_perl, i, ax, items))
     {
       Perl_croak(aTHX_ "expected argument %d to be a scalar or reference to a scalar", i+1);
     }
@@ -169,14 +169,14 @@ struct read_as<scalar>
 template <>
 struct read_as<reference>
 {
-  static bool check(PerlInterpreter* my_perl, int i, int ax)
+  static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
     return SvROK(ST(i));
   }
 
-  static reference get(PerlInterpreter* my_perl, int i, int ax)
+  static reference get(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    if (!check(my_perl, i, ax))
+    if (!check(my_perl, i, ax, items))
     {
       Perl_croak(aTHX_ "expected argument %d to be a reference", i+1);
     }
@@ -190,36 +190,50 @@ struct read_as<reference>
 template <>
 struct read_as<array>
 {
-  static bool check(PerlInterpreter* my_perl, int i, int ax)
+  static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    return SvROK(ST(i)) && SvTYPE(SvRV(ST(i))) == SVt_PVAV; // must pass by reference
+    return items > 0;
   }
 
-  static array get(PerlInterpreter* my_perl, int i, int ax)
+  static array get(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    if (!check(my_perl, i, ax))
+    if (!check(my_perl, i, ax, items))
     {
-      Perl_croak(aTHX_ "expected argument %d to be a reference to a perl array", i+1);
+      Perl_croak(aTHX_ "expected argument %d to be start of a perl array", i+1);
     }
-    return reinterpret_cast<AV*>(SvREFCNT_inc(SvRV(ST(i))));
+
+    array result;
+    result.reserve(items);
+    for (int index = 0; index < items; ++index)
+    {
+      result.push_back(SvREFCNT_inc(ST(index)));
+    }
+    return result;
   }
 };
 
 template <>
 struct read_as<hash>
 {
-  static bool check(PerlInterpreter* my_perl, int i, int ax)
+  static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    return SvROK(ST(i)) && SvTYPE(SvRV(ST(i))) == SVt_PVHV; // must pass by reference
+    return items % 2 == 0 && SvTYPE(ST(0)) == SVt_PV;
   }
 
-  static hash get(PerlInterpreter* my_perl, int i, int ax)
+  static hash get(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    if (!check(my_perl, i, ax))
+    if (!check(my_perl, i, ax, items))
     {
-      Perl_croak(aTHX_ "expected argument %d to be a reference to a perl hash", i+1);
+      Perl_croak(aTHX_ "expected argument %d to be start of a perl hash", i+1);
     }
-    return reinterpret_cast<HV*>(SvREFCNT_inc(SvRV(ST(i))));
+
+    hash result;
+    for (int index = 0; index < items; index += 2)
+    {
+      const char* key = SvPV_nolen(ST(index));
+      result[key] = SvREFCNT_inc(ST(index + 1));
+    }
+    return result;
   }
 };
 

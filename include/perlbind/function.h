@@ -13,6 +13,13 @@ struct base_traits
                                          std::tuple<Class*, Args...>>;
   static constexpr int arity = sizeof...(Args);
   static constexpr int stack_arity = sizeof...(Args) + (std::is_void<Class>::value ? 0 : 1);
+  static constexpr bool has_array = is_any<array, Args...>::value;
+  static constexpr bool has_hash  = is_any<hash, Args...>::value;
+  static constexpr bool is_vararg = has_array || has_hash;
+
+  static_assert(!((has_array || has_hash) && stack_arity > 1),
+    "A function expecting an array or hash must not have any other "
+    "parameters. Prefer using reference parameters instead.");
 };
 
 template <typename Ret, typename... Args>
@@ -56,12 +63,12 @@ struct function : public function_base, function_traits<T>
 
   bool is_compatible(xsub_stack& stack) const override
   {
-    return stack.check_types(typename function::stack_tuple{});
+    return function::is_vararg || stack.check_types(typename function::stack_tuple{});
   }
 
   void call(xsub_stack& stack) const override
   {
-    if (stack.size() != function::stack_arity)
+    if (!function::is_vararg && stack.size() != function::stack_arity)
     {
       auto sig = function::sig_t::str();
       int count = std::is_member_function_pointer<T>::value ? stack.size() - 1 : stack.size();

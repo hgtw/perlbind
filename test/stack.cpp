@@ -113,12 +113,13 @@ TEST_CASE("push array reference to perl stack", "[stack][types]")
   REQUIRE((get_sv("val3", 0) != nullptr && SvNV(get_sv("val3", 0)) == 3.0f));
 }
 
-TEST_CASE("read auto dereferenced array from perl", "[stack][types]")
+TEST_CASE("read array from perl", "[stack][types]")
 {
   struct foo
   {
     static int send_array(perlbind::array arr)
     {
+      REQUIRE(SvREFCNT(arr.sv()) == 1); // ours only from stack reader
       REQUIRE(arr.size() == 4);
       REQUIRE(static_cast<int>(arr[0]) == 4);
       REQUIRE(static_cast<int>(arr[1]) == 3);
@@ -134,7 +135,7 @@ TEST_CASE("read auto dereferenced array from perl", "[stack][types]")
 
   REQUIRE_NOTHROW(interp->eval(R"script(
     @arr = (4, 3, 2, 1);
-    $result = foo::send_array(\@arr);
+    $result = foo::send_array(@arr);
   )script"));
 
   REQUIRE((get_sv("result", 0) != nullptr && SvIV(get_sv("result", 0)) == 4000));
@@ -144,7 +145,7 @@ TEST_CASE("read array reference from perl", "[stack][types]")
 {
   struct foo
   {
-    static int send_array_as_ref(perlbind::reference ref)
+    static int send_array_ref(perlbind::reference ref)
     {
       REQUIRE(ref.is_array_ref());
       REQUIRE(SvREFCNT(ref.sv()) == 2); // original RV on stack and our reference wrapper hold refs
@@ -163,6 +164,11 @@ TEST_CASE("read array reference from perl", "[stack][types]")
         arr.reset(reinterpret_cast<AV*>(SvREFCNT_inc(*ref)));
         REQUIRE(SvREFCNT(ref.sv()) == 2);
         REQUIRE(SvREFCNT(*ref) == 3);
+
+        perlbind::array arr2 = ref;
+        REQUIRE(arr.sv() == arr2.sv());
+        REQUIRE(SvREFCNT(ref.sv()) == 2);
+        REQUIRE(SvREFCNT(*ref) == 4);
       }
 
       REQUIRE(SvREFCNT(ref.sv()) == 2);
@@ -174,11 +180,11 @@ TEST_CASE("read array reference from perl", "[stack][types]")
 
   auto my_perl = interp->get();
   auto package = interp->new_package("foo");
-  package.add("send_array_as_ref", &foo::send_array_as_ref);
+  package.add("send_array_ref", &foo::send_array_ref);
 
   REQUIRE_NOTHROW(interp->eval(R"script(
     @arr = (4, 3, 2, 1);
-    $result = foo::send_array_as_ref(\@arr);
+    $result = foo::send_array_ref(\@arr);
   )script"));
 
   REQUIRE((get_sv("result", 0) != nullptr && SvIV(get_sv("result", 0)) == 5000));
@@ -252,7 +258,36 @@ TEST_CASE("read hash from perl", "[stack][types]")
 {
   struct foo
   {
-    static int send_hash(perlbind::reference ref)
+    static int send_hash(perlbind::hash h)
+    {
+      REQUIRE(SvREFCNT(h.sv()) == 1); // ours only from stack reader
+      REQUIRE(h.size() == 3);
+      REQUIRE(static_cast<int>(h["k1"]) == 99);
+      std::string s = h["k2"];
+      REQUIRE(s == "val");
+      REQUIRE(static_cast<float>(h["k3"]) == 5.0f);
+
+      return 6000;
+    }
+  };
+
+  auto my_perl = interp->get();
+  auto package = interp->new_package("foo");
+  package.add("send_hash", &foo::send_hash);
+
+  REQUIRE_NOTHROW(interp->eval(R"script(
+    %h = ('k1' => 99, 'k2' => 'val', 'k3' => 5.0);
+    $result = foo::send_hash(%h);
+  )script"));
+
+  REQUIRE((get_sv("result", 0) != nullptr && SvIV(get_sv("result", 0)) == 6000));
+}
+
+TEST_CASE("read hash reference from perl", "[stack][types]")
+{
+  struct foo
+  {
+    static int send_hashref(perlbind::reference ref)
     {
       REQUIRE(ref.is_hash_ref());
       REQUIRE(SvREFCNT(ref.sv()) == 2); // stack RV and our wrapper
@@ -276,11 +311,11 @@ TEST_CASE("read hash from perl", "[stack][types]")
 
   auto my_perl = interp->get();
   auto package = interp->new_package("foo");
-  package.add("send_hash", &foo::send_hash);
+  package.add("send_hashref", &foo::send_hashref);
 
   REQUIRE_NOTHROW(interp->eval(R"script(
     %h = ('k1' => 99, 'k2' => 'val', 'k3' => 5.0);
-    $result = foo::send_hash(\%h);
+    $result = foo::send_hashref(\%h);
   )script"));
 
   REQUIRE((get_sv("result", 0) != nullptr && SvIV(get_sv("result", 0)) == 6000));

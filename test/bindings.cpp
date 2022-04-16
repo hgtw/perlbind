@@ -148,3 +148,42 @@ TEST_CASE("overloads", "[package][function]")
     REQUIRE_THROWS(interp->eval("$overload4 = foo::bar(20, 10);"));
   }
 }
+
+TEST_CASE("overload priority with array parameter", "[package][function]")
+{
+  struct foo
+  {
+    static int bar() { return 1; }
+    static int bar(int p1) { return 2; }
+    static int bar(perlbind::array p2) { return 3; }
+  };
+
+  auto my_perl = interp->get();
+
+  SECTION("array with lowest priority")
+  {
+    auto package = interp->new_package("foo");
+    package.add("overloadarray", (int(*)())&foo::bar);
+    package.add("overloadarray", (int(*)(int))&foo::bar);
+    package.add("overloadarray", (int(*)(perlbind::array))&foo::bar);
+
+    REQUIRE_NOTHROW(interp->eval("$result1 = foo::overloadarray();"));
+    REQUIRE_NOTHROW(interp->eval("$result2 = foo::overloadarray(10);"));
+    REQUIRE_NOTHROW(interp->eval("$result3 = foo::overloadarray(20, \"str\");"));
+    REQUIRE((get_sv("result1", 0) != nullptr && SvIV(get_sv("result1", 0)) == 1));
+    REQUIRE((get_sv("result2", 0) != nullptr && SvIV(get_sv("result2", 0)) == 2));
+    REQUIRE((get_sv("result3", 0) != nullptr && SvIV(get_sv("result3", 0)) == 3));
+  }
+
+  SECTION("array with highest priority")
+  {
+    auto package = interp->new_package("foo");
+    package.add("overloadarray2", (int(*)(perlbind::array))&foo::bar);
+    package.add("overloadarray2", (int(*)(int))&foo::bar);
+
+    REQUIRE_NOTHROW(interp->eval("$result1 = foo::overloadarray2(10);"));
+    REQUIRE_NOTHROW(interp->eval("$result2 = foo::overloadarray2(20, \"str\");"));
+    REQUIRE((get_sv("result1", 0) != nullptr && SvIV(get_sv("result1", 0)) == 3));
+    REQUIRE((get_sv("result2", 0) != nullptr && SvIV(get_sv("result2", 0)) == 3));
+  }
+}

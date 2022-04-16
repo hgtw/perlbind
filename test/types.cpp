@@ -383,7 +383,7 @@ TEST_CASE("array index proxy assignment", "[types]")
   REQUIRE(SvREFCNT(arr[2].sv()) == 2);
 }
 
-TEST_CASE("array construction from reference", "[types]")
+TEST_CASE("array from reference", "[types]")
 {
   perlbind::scalar s;
   perlbind::reference sref(s);

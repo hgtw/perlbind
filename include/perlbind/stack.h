@@ -76,7 +76,7 @@ private:
   template <typename T>
   bool check_index(T t, size_t index)
   {
-    return stack::read_as<T>::check(my_perl, static_cast<int>(index), ax);
+    return stack::read_as<T>::check(my_perl, static_cast<int>(index), ax, items);
   }
 
   // return true if perl stack matches all expected argument types in tuple
@@ -93,7 +93,7 @@ private:
   template <typename T>
   T get_stack_index(T t, size_t index)
   {
-    return stack::read_as<T>::get(my_perl, static_cast<int>(index), ax);
+    return stack::read_as<T>::get(my_perl, static_cast<int>(index), ax, items);
   }
 
   template <typename Tuple, size_t... I>

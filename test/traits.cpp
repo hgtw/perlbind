@@ -49,3 +49,26 @@ TEST_CASE("function traits", "[traits][function]")
     STATIC_REQUIRE(std::is_same<traits::stack_tuple, std::tuple<Foo*, int, float>>::value);
   }
 }
+
+TEST_CASE("function traits vararg array and hash", "[traits][function]")
+{
+  using Fn1 = void(*)(int);
+  using Fn2 = int(*)(perlbind::array);
+  using Fn3 = perlbind::array(*)();
+  using Fn4 = perlbind::array(*)(perlbind::hash);
+
+  STATIC_REQUIRE(perlbind::detail::function_traits<Fn1>::has_array == false);
+  STATIC_REQUIRE(perlbind::detail::function_traits<Fn2>::has_array == true);
+  STATIC_REQUIRE(perlbind::detail::function_traits<Fn3>::has_array == false);
+  STATIC_REQUIRE(perlbind::detail::function_traits<Fn4>::has_array == false);
+
+  STATIC_REQUIRE(perlbind::detail::function_traits<Fn1>::has_hash == false);
+  STATIC_REQUIRE(perlbind::detail::function_traits<Fn2>::has_hash == false);
+  STATIC_REQUIRE(perlbind::detail::function_traits<Fn3>::has_hash == false);
+  STATIC_REQUIRE(perlbind::detail::function_traits<Fn4>::has_hash == true);
+
+  STATIC_REQUIRE(perlbind::detail::function_traits<Fn1>::is_vararg == false);
+  STATIC_REQUIRE(perlbind::detail::function_traits<Fn2>::is_vararg == true);
+  STATIC_REQUIRE(perlbind::detail::function_traits<Fn3>::is_vararg == false);
+  STATIC_REQUIRE(perlbind::detail::function_traits<Fn4>::is_vararg == true);
+}

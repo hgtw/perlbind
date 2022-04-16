@@ -31,6 +31,7 @@
 #include <perlbind/version.h>
 #include <perlbind/forward.h>
 #include <perlbind/util.h>
+#include <perlbind/traits.h>
 #include <perlbind/typemap.h>
 #include <perlbind/scalar.h>
 #include <perlbind/array.h>

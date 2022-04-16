@@ -20,6 +20,7 @@ set(PERLBIND_HEADERS
   include/perlbind/stack_push.h
   include/perlbind/stack_read.h
   include/perlbind/subcaller.h
+  include/perlbind/traits.h
   include/perlbind/typemap.h
   include/perlbind/types.h
   include/perlbind/util.h

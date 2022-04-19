@@ -10,13 +10,19 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(Catch2)
 
-add_executable(tests
+set(TEST_SOURCES
   interpreter.cpp
   bindings.cpp
   stack.cpp
   traits.cpp
   types.cpp
 )
+
+if(MSVC)
+  set(TEST_SOURCES ${TEST_SOURCES} ../src/perlbind.natvis)
+endif()
+
+add_executable(tests ${TEST_SOURCES})
 
 target_link_libraries(tests PRIVATE perlbind ${PERL_LIBRARY} Catch2::Catch2)
 

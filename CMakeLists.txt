@@ -32,6 +32,10 @@ set(PERLBIND_SOURCES
   src/package.cpp
 )
 
+if(MSVC)
+  set(PERLBIND_SOURCES ${PERLBIND_SOURCES} src/perlbind.natvis)
+endif()
+
 add_library(perlbind ${PERLBIND_SOURCES} ${PERLBIND_HEADERS})
 
 target_include_directories(perlbind PUBLIC

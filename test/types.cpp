@@ -411,6 +411,18 @@ TEST_CASE("array from reference", "[types]")
   }
 }
 
+TEST_CASE("array from index proxy", "[types]")
+{
+  perlbind::array arr1;
+  arr1.push_back(1);
+
+  perlbind::array arr2;
+  arr2.push_back(perlbind::reference(arr1));
+
+  REQUIRE_THROWS(perlbind::array(arr1[0]));
+  REQUIRE_NOTHROW(perlbind::array(arr2[0]));
+}
+
 TEST_CASE("array with reference element", "[types]")
 {
   perlbind::scalar v = 1000;
@@ -482,6 +494,17 @@ TEST_CASE("hash construction from reference", "[types]")
     }
     REQUIRE(SvREFCNT(src.sv()) == 1);
   }
+}
+
+TEST_CASE("hash construction from proxy index", "[types]")
+{
+  perlbind::hash dummy;
+  dummy.insert("key", perlbind::reference(perlbind::hash()));
+  dummy.insert("bad", perlbind::reference(perlbind::array()));
+
+  REQUIRE_NOTHROW(perlbind::hash(dummy["key"]));
+  REQUIRE_THROWS(perlbind::hash(dummy["bad"]));
+  REQUIRE_THROWS(perlbind::hash(dummy["missing"]));
 }
 
 TEST_CASE("hash index proxy reference counts", "[types]")

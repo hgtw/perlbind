@@ -1,7 +1,6 @@
 #pragma once
 
 #include "types.h"
-#include <stdexcept>
 #include <string>
 #include <type_traits>
 #include <typeinfo>
@@ -217,24 +216,6 @@ struct scalar_proxy
   operator T() const
   {
     return SvREFCNT_inc(m_value);
-  }
-
-  template <typename T, std::enable_if_t<std::is_same<T, array>::value, bool> = true>
-  operator T() const
-  {
-    if (!m_value.is_array_ref())
-      throw std::runtime_error("cannot return array from proxy index, not an array reference");
-
-    return reinterpret_cast<AV*>(SvREFCNT_inc(m_value.deref()));
-  }
-
-  template <typename T, std::enable_if_t<std::is_same<T, hash>::value, bool> = true>
-  operator T() const
-  {
-    if (!m_value.is_hash_ref())
-      throw std::runtime_error("cannot return hash from proxy index, not a hash reference");
-
-    return reinterpret_cast<HV*>(SvREFCNT_inc(m_value.deref()));
   }
 
   // assigning scalar to proxy, the source SV is modified (arr[i] = "new value")

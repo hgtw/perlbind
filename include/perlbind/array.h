@@ -38,6 +38,8 @@ struct array : public type_base
 
     reset(reinterpret_cast<AV*>(SvREFCNT_inc(*ref)));
   }
+  array(scalar_proxy proxy)
+    : array(scalar(SvREFCNT_inc(proxy.sv()))) {}
 
   array& operator=(const array& other) noexcept
   {

@@ -39,6 +39,8 @@ struct hash : public type_base
 
     reset(reinterpret_cast<HV*>(SvREFCNT_inc(*ref)));
   }
+  hash(scalar_proxy proxy)
+    : hash(scalar(SvREFCNT_inc(proxy.sv()))) {}
 
   hash& operator=(const hash& other) noexcept
   {

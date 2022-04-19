@@ -48,9 +48,14 @@ struct hash_iterator
     : my_perl(interp), m_hv(hv), m_he(he)
   {}
 
+  bool operator==(const hash_iterator& other) const
+  {
+    return m_he == other.m_he;
+  }
+
   bool operator!=(const hash_iterator& other) const
   {
-    return m_he != other.m_he;
+    return !(*this == other);
   }
 
   hash_iterator& operator++()

@@ -806,3 +806,26 @@ TEST_CASE("hash iterator range loop", "[types]")
 
   REQUIRE(SvREFCNT(src) == 1);
 }
+
+TEST_CASE("hash find")
+{
+  perlbind::hash table;
+  table["foo"] = 100;
+  SV* src = table["foo"].sv();
+
+  SECTION("exists")
+  {
+    auto it = table.find("foo");
+    REQUIRE(it != table.end());
+    REQUIRE(strcmp(static_cast<const char*>(it->first), "foo") == 0);
+    REQUIRE(static_cast<int>(it->second) == 100);
+  }
+
+  SECTION("missing")
+  {
+    auto it = table.find("missing");
+    REQUIRE(it == table.end());
+  }
+
+  REQUIRE(SvREFCNT(src) == 1);
+}

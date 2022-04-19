@@ -136,11 +136,29 @@ struct hash : public type_base
     return { my_perl, m_hv, nullptr };
   }
 
+  iterator find(const char* key)
+  {
+    return find(key, static_cast<I32>(strlen(key)));
+  }
+
+  iterator find(const std::string& key)
+  {
+    return find(key.c_str(), static_cast<I32>(key.size()));
+  }
+
 private:
   scalar at(const char* key, size_t size)
   {
     SV** sv = hv_fetch(m_hv, key, static_cast<I32>(size), 1);
     return SvREFCNT_inc(*sv);
+  }
+
+  iterator find(const char* key, size_t size)
+  {
+    // key sv made mortal with SVs_TEMP flag
+    SV* keysv = newSVpvn_flags(key, static_cast<I32>(size), SVs_TEMP);
+    HE* he = hv_fetch_ent(m_hv, keysv, 0, 0);
+    return { my_perl, m_hv, he };
   }
 
   void insert(const char* key, size_t size, scalar value)

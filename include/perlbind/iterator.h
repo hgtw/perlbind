@@ -6,7 +6,7 @@ struct array_iterator
 {
   array_iterator() = default;
   array_iterator(PerlInterpreter* interp, AV* av, size_t index)
-    : my_perl(interp), m_av(av), m_index(index)
+    : my_perl(interp), m_av(av), m_index(index), m_scalar(interp)
   {}
 
   bool operator!=(const array_iterator& other) const
@@ -20,16 +20,25 @@ struct array_iterator
     return *this;
   }
 
-  scalar operator*() const
+  scalar* operator->()
   {
-    SV** sv = av_fetch(m_av, m_index, 1);
-    return SvREFCNT_inc(*sv);
+    return &(**this);
+  }
+
+  scalar& operator*()
+  {
+    SV** sv = av_fetch(m_av, m_index, 0);
+    if (sv)
+      m_scalar = SvREFCNT_inc(*sv);
+
+    return m_scalar;
   }
 
 private:
   PerlInterpreter* my_perl;
   AV* m_av;
   size_t m_index;
+  scalar m_scalar;
 };
 
 struct hash_iterator
@@ -50,15 +59,22 @@ struct hash_iterator
     return *this;
   }
 
-  std::pair<const char*, scalar> operator*() const
+  std::pair<const char*, scalar>* operator->()
   {
-    return{ HePV(m_he, PL_na), SvREFCNT_inc(HeVAL(m_he)) };
+    return &(**this);
+  }
+
+  std::pair<const char*, scalar>& operator*()
+  {
+    m_pair = { HePV(m_he, PL_na), scalar(my_perl, SvREFCNT_inc(HeVAL(m_he))) };
+    return m_pair;
   }
 
 private:
   PerlInterpreter* my_perl;
   HV* m_hv;
   HE* m_he;
+  std::pair<const char*, scalar> m_pair;
 };
 
 } // namespace detail

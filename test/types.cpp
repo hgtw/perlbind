@@ -690,8 +690,7 @@ TEST_CASE("array range loop", "[types]")
     {
       if (item.is_hash_ref())
       {
-        perlbind::hash hash = item;
-        REQUIRE(SvREFCNT(hash.sv()) == 5); // each should be 1x orig, 3x refs, 1x loop
+        REQUIRE(SvREFCNT(*item) == 5); // each should be 1x orig, 3x refs, 1x loop
         ++count;
       }
     }
@@ -715,4 +714,95 @@ TEST_CASE("hash proxy with non-existent keys", "[types]")
   REQUIRE(v2 == 0);
   REQUIRE(f == 0.0f);
   REQUIRE(s.empty());
+}
+
+TEST_CASE("array iterator ref count", "[types]")
+{
+  perlbind::array arr;
+  arr.push_back(100);
+  SV* src = arr[0].sv();
+
+  REQUIRE(SvREFCNT(src) == 1);
+  {
+    auto it = arr.begin();
+    REQUIRE(SvREFCNT(src) == 1);
+    REQUIRE((*it).sv() == src);
+  }
+  REQUIRE(SvREFCNT(src) == 1);
+}
+
+TEST_CASE("array iterator range loop", "[types]")
+{
+  perlbind::array arr;
+  arr.push_back(100);
+  SV* src = arr[0].sv();
+
+  SECTION("copy")
+  {
+    for (auto it : arr)
+    {
+      REQUIRE(SvREFCNT(it.sv()) == 1);
+      REQUIRE(it.sv() != src);
+      it = 300;
+    }
+    REQUIRE(static_cast<int>(arr[0]) == 100);
+  }
+
+  SECTION("reference")
+  {
+    for (auto& it : arr)
+    {
+      REQUIRE(it.sv() == src);
+      it = 300;
+    }
+    REQUIRE(static_cast<int>(arr[0]) == 300);
+  }
+
+  REQUIRE(SvREFCNT(src) == 1);
+}
+
+TEST_CASE("hash iterator ref count", "[types]")
+{
+  perlbind::hash table;
+  table["foo"] = 100;
+  SV* src = table["foo"].sv();
+
+  REQUIRE(SvREFCNT(src) == 1);
+  {
+    auto it = table.begin();
+    REQUIRE(SvREFCNT(src) == 1);
+    REQUIRE((*it).second.sv() == src);
+  }
+  REQUIRE(SvREFCNT(src) == 1);
+}
+
+TEST_CASE("hash iterator range loop", "[types]")
+{
+  perlbind::hash table;
+  table["foo"] = 100;
+  SV* src = table["foo"].sv();
+
+  SECTION("copy")
+  {
+    for (auto it : table)
+    {
+      REQUIRE(SvREFCNT(it.second.sv()) == 1);
+      REQUIRE(it.second.sv() != src);
+      it.second = 300;
+    }
+    REQUIRE(static_cast<int>(table["foo"]) == 100);
+  }
+
+  SECTION("reference")
+  {
+    for (auto& it : table)
+    {
+      REQUIRE(it.second.sv() == src);
+      REQUIRE(static_cast<int>(it.second) == 100);
+      it.second = 300;
+    }
+    REQUIRE(static_cast<int>(table["foo"]) == 300);
+  }
+
+  REQUIRE(SvREFCNT(src) == 1);
 }

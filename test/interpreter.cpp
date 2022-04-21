@@ -61,3 +61,25 @@ TEST_CASE("calling perl subs", "[subcaller]")
   REQUIRE(interp->call_sub<int>("callpackage::testsub") == 10);
   REQUIRE_THROWS(interp->call_sub<int>("callpackage::throwsub"));
 }
+
+TEST_CASE("non-owning interpreter stateless package bindings", "[interpreter][package]")
+{
+  struct stateless
+  {
+    static void foo() {}
+    static void foo(int) {}
+  };
+
+  auto my_perl = interp->get();
+
+  {
+    perlbind::interpreter view(my_perl, false);
+    auto package = view.new_package("stateless");
+    package.add("foo", (void(*)())&stateless::foo);
+    package.add("foo", (void(*)(int))&stateless::foo);
+  }
+
+  CV* cv = get_cv("stateless::foo", 0);
+  REQUIRE(cv != nullptr);
+  REQUIRE(GvAV(CvGV(cv)) != nullptr); // overload array should exist
+}

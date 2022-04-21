@@ -28,6 +28,7 @@ set(PERLBIND_HEADERS
 )
 
 set(PERLBIND_SOURCES
+  src/function.cpp
   src/interpreter.cpp
   src/package.cpp
 )

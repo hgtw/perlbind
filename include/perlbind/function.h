@@ -44,6 +44,9 @@ struct function_base
   virtual std::string get_signature() const = 0;
   virtual bool is_compatible(xsub_stack&) const = 0;
   virtual void call(xsub_stack&) const = 0;
+
+  static int gc(pTHX_ SV* sv, MAGIC* mg);
+  static const MGVTBL mgvtbl;
 };
 
 template <typename T>

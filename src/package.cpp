@@ -2,25 +2,35 @@
 
 namespace perlbind { namespace detail {
 
-const MGVTBL package::mgvtbl = { 0, 0, 0, 0, 0, 0, 0, 0 };
-
-void package::add_impl(const char* name, std::unique_ptr<function_base>&& function)
+void package::add_impl(const char* name, detail::function_base* function)
 {
   std::string export_name = m_name + "::" + name;
 
-  // todo: store cvs and cv_undef on destruction (for non-owning interpreters)
+  // the sv is assigned a magic metamethod table to delete the function
+  // object when perl frees the sv
+  SV* sv = newSViv(PTR2IV(function));
+  sv_magicext(sv, nullptr, PERL_MAGIC_ext, &function_base::mgvtbl, nullptr, 0);
+
   CV* cv = get_cv(export_name.c_str(), 0);
   if (!cv)
   {
     cv = newXS(export_name.c_str(), &package::xsub, __FILE__);
-    CvXSUBANY(cv).any_ptr = function.get();
+    CvXSUBANY(cv).any_ptr = function;
   }
   else // function exists, remove target to search overloads when called
   {
     CvXSUBANY(cv).any_ptr = nullptr;
   }
 
-  m_methods[name].emplace_back(std::move(function));
+  // create an array with same name to store overloads in the CV's GV
+  AV* av = GvAV(CvGV(cv));
+  if (!av)
+  {
+    av = get_av(export_name.c_str(), GV_ADD);
+  }
+
+  array overloads = reinterpret_cast<AV*>(SvREFCNT_inc(av));
+  overloads.push_back(sv); // giving only ref to GV array
 }
 
 void package::xsub(PerlInterpreter* my_perl, CV* cv)
@@ -34,22 +44,22 @@ void package::xsub(PerlInterpreter* my_perl, CV* cv)
   }
 
   // find first compatible overload
-  auto self = detail::package::get(my_perl, stack.get_stash());
-  auto it = self->m_methods.find(stack.sub_name());
-  if (it != self->m_methods.end())
+  AV* av = GvAV(CvGV(cv));
+
+  array functions = reinterpret_cast<AV*>(SvREFCNT_inc(av));
+  for (const auto& function : functions)
   {
-    for (const auto& func : it->second)
+    auto func = INT2PTR(detail::function_base*, SvIV(function.sv()));
+    if (func->is_compatible(stack))
     {
-      if (func->is_compatible(stack))
-      {
-        return func->call(stack);
-      }
+      return func->call(stack);
     }
   }
 
   std::string overloads;
-  for (const auto& func : it->second)
+  for (const auto& function : functions)
   {
+    auto func = INT2PTR(detail::function_base*, SvIV(function.sv()));
     overloads += func->get_signature() + "\n ";
   }
 

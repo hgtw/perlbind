@@ -1,9 +1,6 @@
 #pragma once
 
-#include <memory>
 #include <string>
-#include <unordered_map>
-#include <vector>
 
 namespace perlbind { namespace detail {
 
@@ -17,25 +14,14 @@ public:
   package& operator=(package&& other) = delete;
   package(PerlInterpreter* interp, const char* name)
     : my_perl(interp), m_name(name), m_stash(gv_stashpv(name, GV_ADD))
-  {
-    sv_magicext((SV*)m_stash, nullptr, PERL_MAGIC_ext, &package::mgvtbl, (const char*)this, 0);
-  }
-
-  static package* get(PerlInterpreter* my_perl, HV* stash)
-  {
-    MAGIC* mg = mg_findext((SV*)stash, PERL_MAGIC_ext, &package::mgvtbl);
-    if (!mg || !mg->mg_ptr)
-    {
-      Perl_croak(aTHX_ "unexpected error accessing package object");
-    }
-    return reinterpret_cast<detail::package*>(mg->mg_ptr);
-  }
+  {}
 
   template <typename T>
   void add(const char* name, T&& func)
   {
-    auto function = std::make_unique<detail::function<T>>(my_perl, func);
-    add_impl(name, std::move(function));
+    // ownership of function object is given to perl
+    auto function = new detail::function<T>(my_perl, func);
+    add_impl(name, static_cast<detail::function_base*>(function));
   }
 
   void add_base_class(const char* name)
@@ -52,15 +38,12 @@ public:
   }
 
 private:
-  static const MGVTBL mgvtbl;
-
   static void xsub(PerlInterpreter* my_perl, CV* cv);
-  void add_impl(const char* name, std::unique_ptr<function_base>&& function);
+  void add_impl(const char* name, detail::function_base* function);
 
   std::string m_name;
   PerlInterpreter* my_perl = nullptr;
   HV* m_stash = nullptr;
-  std::unordered_map<std::string, std::vector<std::unique_ptr<function_base>>> m_methods;
 };
 
 } // namespace detail

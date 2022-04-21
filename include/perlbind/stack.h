@@ -17,9 +17,8 @@ public:
     : stack::pusher(my_perl)
   {
     GV* gv = CvGV(cv);
-    m_stash = GvSTASH(gv);
     m_sub_name = GvNAME(gv);
-    m_pkg_name = HvNAME(m_stash);
+    m_pkg_name = HvNAME(GvSTASH(gv));
 
     dXSARGS;
     this->sp = sp;
@@ -30,7 +29,6 @@ public:
   ~xsub_stack() { XSRETURN(m_pushed); }
 
   int size() const { return items; }
-  HV* get_stash() const { return m_stash; }
   std::string name() const { return std::string(pkg_name()) + "::" + sub_name(); }
   const char* pkg_name() const { return m_pkg_name; }
   const char* sub_name() const { return m_sub_name; }
@@ -68,7 +66,6 @@ protected:
   int ax = 0;
   int items = 0;
   SV** mark = nullptr;
-  HV* m_stash = nullptr;
   const char* m_pkg_name = nullptr;
   const char* m_sub_name = nullptr;
 

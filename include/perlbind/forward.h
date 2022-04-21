@@ -12,7 +12,7 @@ struct hash_iterator;
 } // namespace detail
 
 class interpreter;
-struct package;
+class package;
 struct scalar;
 struct scalar_proxy;
 struct reference;

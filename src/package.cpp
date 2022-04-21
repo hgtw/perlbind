@@ -1,6 +1,6 @@
 #include <perlbind/perlbind.h>
 
-namespace perlbind { namespace detail {
+namespace perlbind {
 
 void package::add_impl(const char* name, detail::function_base* function)
 {
@@ -9,7 +9,7 @@ void package::add_impl(const char* name, detail::function_base* function)
   // the sv is assigned a magic metamethod table to delete the function
   // object when perl frees the sv
   SV* sv = newSViv(PTR2IV(function));
-  sv_magicext(sv, nullptr, PERL_MAGIC_ext, &function_base::mgvtbl, nullptr, 0);
+  sv_magicext(sv, nullptr, PERL_MAGIC_ext, &detail::function_base::mgvtbl, nullptr, 0);
 
   CV* cv = get_cv(export_name.c_str(), 0);
   if (!cv)
@@ -35,9 +35,9 @@ void package::add_impl(const char* name, detail::function_base* function)
 
 void package::xsub(PerlInterpreter* my_perl, CV* cv)
 {
-  xsub_stack stack(my_perl, cv);
+  detail::xsub_stack stack(my_perl, cv);
 
-  auto target = static_cast<function_base*>(CvXSUBANY(cv).any_ptr);
+  auto target = static_cast<detail::function_base*>(CvXSUBANY(cv).any_ptr);
   if (target)
   {
     return target->call(stack);
@@ -67,5 +67,4 @@ void package::xsub(PerlInterpreter* my_perl, CV* cv)
              stack.name().c_str(), stack.size(), overloads.c_str());
 }
 
-} // namespace detail
 } // namespace perlbind

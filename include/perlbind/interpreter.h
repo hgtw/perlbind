@@ -35,15 +35,7 @@ public:
   // returns interface to add bindings to package name
   package new_package(const char* name)
   {
-    auto it = m_packages.find(name);
-    if (it == m_packages.end())
-    {
-      auto res = m_packages.emplace(std::piecewise_construct,
-                                    std::forward_as_tuple(name),
-                                    std::forward_as_tuple(my_perl, name));
-      it = res.first;
-    }
-    return package(&it->second);
+    return package(my_perl, name);
   }
 
   // registers type for blessing objects, returns interface
@@ -54,8 +46,7 @@ public:
                   "new_class<T> 'T' should not be a pointer or reference");
 
     m_typemap[std::type_index(typeid(T*))] = name;
-    auto result = new_package(name);
-    return class_<T>(result.m_package);
+    return class_<T>(my_perl, name);
   }
 
   // helper to bind functions in default main:: package
@@ -70,7 +61,6 @@ private:
 
   bool m_is_owner = false;
   PerlInterpreter* my_perl = nullptr;
-  std::unordered_map<std::string, detail::package> m_packages;
   detail::typemap::typemap_t m_typemap;
 };
 

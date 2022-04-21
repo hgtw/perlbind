@@ -2,20 +2,20 @@
 
 #include <string>
 
-namespace perlbind { namespace detail {
+namespace perlbind {
 
 class package
 {
 public:
+  virtual ~package() = default;
   package() = delete;
-  package(const package& other) = delete;
-  package(package&& other) = delete;
-  package& operator=(const package& other) = delete;
-  package& operator=(package&& other) = delete;
   package(PerlInterpreter* interp, const char* name)
     : my_perl(interp), m_name(name), m_stash(gv_stashpv(name, GV_ADD))
   {}
 
+  // bind a function pointer to a function name in the package
+  // overloads with same name must be explicit (default parameters not supported)
+  // overloads have a runtime lookup cost and chooses the first compatible overload
   template <typename T>
   void add(const char* name, T&& func)
   {
@@ -24,6 +24,9 @@ public:
     add_impl(name, static_cast<detail::function_base*>(function));
   }
 
+  // specify a base class name for object inheritance (must be registered)
+  // calling object methods missing from the package will search parent classes
+  // base classes are searched in registered order and include any grandparents
   void add_base_class(const char* name)
   {
     std::string package_isa = m_name + "::ISA";
@@ -31,6 +34,7 @@ public:
     isa_array.push_back(name);
   }
 
+  // add a constant value to this package namespace
   template <typename T>
   void add_const(const char* name, T&& value)
   {
@@ -46,51 +50,9 @@ private:
   HV* m_stash = nullptr;
 };
 
-} // namespace detail
-
-// public package interface for internal packages stored on interpreter
-struct package
-{
-  virtual ~package() = default;
-  package() = delete;
-
-  // bind a function pointer to a function name in the package
-  // overloading is supported with the following restrictions
-  // 1) overloaded functions cannot have default arguments
-  // 2) function pointers must be explicitly casted for C++ functions with the same name
-  // 3) overloading has a runtime lookup cost and will choose the first compatible overload
-  template <typename T>
-  void add(const char* name, T&& func)
-  {
-    m_package->add<T>(name, std::forward<T>(func));
-  }
-
-  // specify a base class name for object inheritance (must be registered)
-  // calling object methods missing from the package will search parent classes
-  // base classes are searched in registered order and include any grandparents
-  void add_base_class(const char* name)
-  {
-    m_package->add_base_class(name);
-  }
-
-  // add a constant value to this package namespace
-  template <typename T>
-  void add_const(const char* name, T&& value)
-  {
-    m_package->add_const<T>(name, std::forward<T>(value));
-  }
-
-private:
-  friend class interpreter;
-  package(detail::package* package) : m_package(package) {}
-
-  detail::package* m_package = nullptr; // non-owning, stored on interpreter
-};
-
 template <typename T>
 struct class_ : public package
 {
-  friend class interpreter;
   using package::package;
 };
 

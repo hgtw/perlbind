@@ -13,6 +13,11 @@ int main(int argc, char* argv[])
 {
   interp = std::make_unique<perlbind::interpreter>();
 
+  // setup typemaps so we can confirm same ids in another compilation unit
+  perlbind::detail::usertype<int>::id();
+  perlbind::detail::usertype<double>::id();
+  perlbind::detail::usertype<bool>::id();
+
   return Catch::Session().run( argc, argv );
 }
 
@@ -73,7 +78,7 @@ TEST_CASE("non-owning interpreter stateless package bindings", "[interpreter][pa
   auto my_perl = interp->get();
 
   {
-    perlbind::interpreter view(my_perl, false);
+    perlbind::interpreter view(my_perl);
     auto package = view.new_package("stateless");
     package.add("foo", (void(*)())&stateless::foo);
     package.add("foo", (void(*)(int))&stateless::foo);
@@ -82,4 +87,25 @@ TEST_CASE("non-owning interpreter stateless package bindings", "[interpreter][pa
   CV* cv = get_cv("stateless::foo", 0);
   REQUIRE(cv != nullptr);
   REQUIRE(GvAV(CvGV(cv)) != nullptr); // overload array should exist
+}
+
+TEST_CASE("typemap", "[interpreter][typemap]")
+{
+  auto my_perl = interp->get();
+  auto typemap = perlbind::detail::typemap::get(my_perl);
+  auto type_id = perlbind::detail::usertype<struct typemap_test*>::id();
+  auto type_name = perlbind::detail::typemap::get_name<struct typemap_test*>(my_perl);
+  REQUIRE(!typemap.exists(type_id));
+  REQUIRE(type_name == nullptr);
+
+  perlbind::detail::usertype<struct typemap_dummy1*>::id();
+  perlbind::detail::usertype<struct typemap_dummy2*>::id();
+
+  interp->new_class<struct typemap_test>("typemap_test");
+  auto type_id_after = perlbind::detail::usertype<struct typemap_test*>::id();
+  type_name = perlbind::detail::typemap::get_name<struct typemap_test*>(my_perl);
+  REQUIRE(type_id == type_id_after);
+  REQUIRE(typemap.exists(type_id));
+  REQUIRE(type_name != nullptr);
+  REQUIRE(strcmp(type_name, "typemap_test") == 0);
 }

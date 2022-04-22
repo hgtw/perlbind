@@ -61,15 +61,14 @@ struct pusher
   template <typename T, std::enable_if_t<std::is_pointer<T>::value, bool> = true>
   void push(T value)
   {
-    auto typemap = detail::typemap::get(my_perl);
-    auto typeindex = typemap->find(std::type_index(typeid(T)));
-    if (typeindex == typemap->end())
+    const char* type_name = detail::typemap::get_name<T>(my_perl);
+    if (!type_name)
     {
       Perl_croak(aTHX_ "cannot push unregistered pointer of type '%s'", util::type_name<T>::str().c_str());
     }
 
     SV* sv = sv_newmortal();
-    sv_setref_pv(sv, typeindex->second.c_str(), static_cast<void*>(value));
+    sv_setref_pv(sv, type_name, static_cast<void*>(value));
     XPUSHs(sv);
     ++m_pushed;
   };

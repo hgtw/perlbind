@@ -187,3 +187,13 @@ TEST_CASE("overload priority with array parameter", "[package][function]")
     REQUIRE((get_sv("result2", 0) != nullptr && SvIV(get_sv("result2", 0)) == 3));
   }
 }
+
+TEST_CASE("typemap ids in another translation unit", "[interpreter][typemap]")
+{
+  // typemap ids created in interpreter.cpp main() should be the same here
+  auto my_perl = interp->get();
+  auto typemap = perlbind::detail::typemap::get(my_perl);
+  REQUIRE(perlbind::detail::usertype<bool>::id() == "2");
+  REQUIRE(perlbind::detail::usertype<double>::id() == "1");
+  REQUIRE(perlbind::detail::usertype<int>::id() == "0");
+}

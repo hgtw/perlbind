@@ -15,8 +15,6 @@ EXTERN_C
 
 namespace perlbind {
 
-const MGVTBL detail::typemap::mgvtbl = { 0, 0, 0, 0, 0, 0, 0, 0 };
-
 interpreter::interpreter()
   : m_is_owner(true)
 {
@@ -46,8 +44,6 @@ void interpreter::init(int argc, const char** argv)
   perl_parse(my_perl, xs_init, argc, argvs, nullptr);
 
   perl_run(my_perl);
-
-  detail::typemap::store(my_perl, &m_typemap);
 }
 
 interpreter::~interpreter()

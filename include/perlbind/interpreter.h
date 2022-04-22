@@ -1,18 +1,12 @@
 #pragma once
 
-#include <typeinfo>
-
 namespace perlbind {
 
 class interpreter
 {
 public:
   interpreter();
-  interpreter(PerlInterpreter* interp, bool store_typemap) : my_perl(interp)
-  {
-    if (store_typemap)
-      detail::typemap::store(my_perl, &m_typemap);
-  }
+  interpreter(PerlInterpreter* interp) : my_perl(interp) {}
   interpreter(int argc, const char** argv);
   interpreter(const interpreter& other) = delete;
   interpreter(interpreter&& other) = delete;
@@ -45,7 +39,10 @@ public:
     static_assert(!std::is_pointer<T>::value && !std::is_reference<T>::value,
                   "new_class<T> 'T' should not be a pointer or reference");
 
-    m_typemap[std::type_index(typeid(T*))] = name;
+    auto typemap = detail::typemap::get(my_perl);
+    auto type_id = detail::usertype<T*>::id();
+    typemap[type_id] = name;
+
     return class_<T>(my_perl, name);
   }
 
@@ -61,7 +58,6 @@ private:
 
   bool m_is_owner = false;
   PerlInterpreter* my_perl = nullptr;
-  detail::typemap::typemap_t m_typemap;
 };
 
 } // namespace perlbind

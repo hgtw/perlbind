@@ -92,9 +92,8 @@ struct read_as<T, std::enable_if_t<std::is_pointer<T>::value>>
 {
   static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    auto typemap = detail::typemap::get(my_perl);
-    auto it = typemap->find(std::type_index(typeid(T)));
-    return (it != typemap->end()) && SvROK(ST(i)) && sv_derived_from(ST(i), it->second.c_str());
+    const char* type_name = detail::typemap::get_name<T>(my_perl);
+    return type_name && SvROK(ST(i)) && sv_derived_from(ST(i), type_name);
   }
 
   static T get(PerlInterpreter* my_perl, int i, int ax, int items)
@@ -102,13 +101,12 @@ struct read_as<T, std::enable_if_t<std::is_pointer<T>::value>>
     if (!check(my_perl, i, ax, items))
     {
       // would prefer to check for unregistered types at compile time (not possible?)
-      auto typemap = detail::typemap::get(my_perl);
-      auto it = typemap->find(std::type_index(typeid(T)));
-      if (it == typemap->end())
+      const char* type_name = detail::typemap::get_name<T>(my_perl);
+      if (!type_name)
       {
         Perl_croak(aTHX_ "expected argument %d to be a reference to an unregistered type (method unusable)", i+1);
       }
-      Perl_croak(aTHX_ "expected argument %d to be a reference to an object of type '%s'", i+1, it->second.c_str());
+      Perl_croak(aTHX_ "expected argument %d to be a reference to an object of type '%s'", i+1, type_name);
     }
 
     IV tmp = SvIV(SvRV(ST(i)));

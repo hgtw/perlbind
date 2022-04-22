@@ -3,7 +3,6 @@
 #include "types.h"
 #include <string>
 #include <type_traits>
-#include <typeinfo>
 
 namespace perlbind {
 
@@ -116,13 +115,8 @@ struct scalar : type_base
   scalar& operator=(T value) noexcept
   {
     // bless if it's in the typemap
-    auto typemap = detail::typemap::get(my_perl);
-    auto it = typemap->find(std::type_index(typeid(T)));
-    if (it == typemap->end())
-      sv_setref_pv(m_sv, nullptr, static_cast<void*>(value));
-    else
-      sv_setref_pv(m_sv, it->second.c_str(), static_cast<void*>(value));
-
+    const char* type_name = detail::typemap::template get_name<T>(my_perl);
+    sv_setref_pv(m_sv, type_name, static_cast<void*>(value));
     return *this;
   }
 
@@ -201,6 +195,7 @@ struct scalar_proxy
     : my_perl(interp), m_value(std::move(value)) {}
 
   SV* sv() const { return m_value; }
+  const char* c_str() const { return static_cast<const char*>(m_value); }
 
   operator std::string() const { return m_value; }
 

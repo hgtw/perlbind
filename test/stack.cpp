@@ -320,3 +320,27 @@ TEST_CASE("read hash reference from perl", "[stack][types]")
 
   REQUIRE((get_sv("result", 0) != nullptr && SvIV(get_sv("result", 0)) == 6000));
 }
+
+struct readtest {};
+readtest readtest_inst;
+TEST_CASE("push and read registered object reference pointers", "[stack]")
+{
+  struct foo
+  {
+    static readtest* get_readtest() { return &readtest_inst; }
+    static void call_readtest1(readtest* p) {}
+    static void call_readtest2(struct nonreadtest* p) {}
+  };
+
+  auto my_perl = interp->get();
+  auto package = interp->new_package("foo");
+  package.add("get_readtest", &foo::get_readtest);
+  package.add("call_readtest1", &foo::call_readtest1);
+  package.add("call_readtest2", &foo::call_readtest2);
+
+  REQUIRE_THROWS(interp->eval("$readtestinst = foo::get_readtest();"));
+  interp->new_class<readtest>("readtest");
+  REQUIRE_NOTHROW(interp->eval("$readtestinst = foo::get_readtest();"));
+  REQUIRE_NOTHROW(interp->eval("foo::call_readtest1($readtestinst);"));
+  REQUIRE_THROWS(interp->eval("foo::call_readtest2($readtestinst);"));
+}

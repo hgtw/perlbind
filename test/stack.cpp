@@ -344,3 +344,42 @@ TEST_CASE("push and read registered object reference pointers", "[stack]")
   REQUIRE_NOTHROW(interp->eval("foo::call_readtest1($readtestinst);"));
   REQUIRE_THROWS(interp->eval("foo::call_readtest2($readtestinst);"));
 }
+
+struct nullabletest {};
+nullabletest nullabletest_inst;
+TEST_CASE("read nullable<T> types", "[stack][types]")
+{
+  struct foo
+  {
+    static nullabletest* get_ptr() { return &nullabletest_inst; }
+    static bool call_with_valid(perlbind::nullable<nullabletest*> p)
+    {
+      REQUIRE(p.get() == &nullabletest_inst);
+      return 1;
+    }
+    static int call_with_null(perlbind::nullable<nullabletest*> p)
+    {
+      REQUIRE(p.get() == nullptr);
+      return 2;
+    }
+  };
+
+  interp->new_class<nullabletest>("nullabletest");
+
+  auto my_perl = interp->get();
+  auto package = interp->new_package("foo");
+  package.add("get_nulltest_ptr", &foo::get_ptr);
+  package.add("call_with_valid", &foo::call_with_valid);
+  package.add("call_with_null", &foo::call_with_null);
+
+  REQUIRE_NOTHROW(interp->eval("$ptr = foo::get_nulltest_ptr();"));
+  REQUIRE_NOTHROW(interp->eval("$result1 = foo::call_with_valid($ptr);"));
+  REQUIRE_NOTHROW(interp->eval("$result2 = foo::call_with_null('');"));
+  REQUIRE_NOTHROW(interp->eval("$result3 = foo::call_with_null(0);"));
+  REQUIRE_NOTHROW(interp->eval("$result4 = foo::call_with_null($nullsv);"));
+
+  REQUIRE((get_sv("result1", 0) != nullptr && SvIV(get_sv("result1", 0)) == 1));
+  REQUIRE((get_sv("result2", 0) != nullptr && SvIV(get_sv("result2", 0)) == 2));
+  REQUIRE((get_sv("result3", 0) != nullptr && SvIV(get_sv("result3", 0)) == 2));
+  REQUIRE((get_sv("result4", 0) != nullptr && SvIV(get_sv("result4", 0)) == 2));
+}

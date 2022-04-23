@@ -114,6 +114,29 @@ struct read_as<T, std::enable_if_t<std::is_pointer<T>::value>>
   }
 };
 
+template <typename T>
+struct read_as<nullable<T>>
+{
+  static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
+  {
+    return true;
+  }
+
+  static nullable<T> get(PerlInterpreter* my_perl, int i, int ax, int items)
+  {
+    if (sv_isobject(ST(i)))
+    {
+      const char* type_name = detail::typemap::get_name<T>(my_perl);
+      if (type_name && sv_derived_from(ST(i), type_name))
+      {
+        IV tmp = SvIV(SvRV(ST(i)));
+        return INT2PTR(T, tmp);
+      }
+    }
+    return nullptr;
+  }
+};
+
 template <>
 struct read_as<SV*>
 {

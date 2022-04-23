@@ -9,4 +9,17 @@ struct type_base
   PerlInterpreter* my_perl = nullptr;
 };
 
+// helper type to allow null object reference arguments in bindings
+template <typename T>
+struct nullable
+{
+  static_assert(std::is_pointer<T>::value, "nullable<T> 'T' must be pointer");
+
+  nullable() = default;
+  nullable(T ptr) : m_ptr(ptr) {}
+  T get() { return m_ptr; }
+private:
+  T m_ptr = nullptr;
+};
+
 } // namespace perlbind

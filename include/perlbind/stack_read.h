@@ -72,7 +72,7 @@ struct read_as<void*>
 {
   static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    return SvROK(ST(i));
+    return sv_isobject(ST(i));
   }
 
   static void* get(PerlInterpreter* my_perl, int i, int ax, int items)
@@ -93,7 +93,7 @@ struct read_as<T, std::enable_if_t<std::is_pointer<T>::value>>
   static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
     const char* type_name = detail::typemap::get_name<T>(my_perl);
-    return type_name && SvROK(ST(i)) && sv_derived_from(ST(i), type_name);
+    return type_name && sv_isobject(ST(i)) && sv_derived_from(ST(i), type_name);
   }
 
   static T get(PerlInterpreter* my_perl, int i, int ax, int items)

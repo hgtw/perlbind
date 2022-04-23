@@ -121,6 +121,7 @@ struct scalar : type_base
   }
 
   operator SV*() const { return m_sv; }
+  operator void*() const { return m_sv; }
   operator const char*() const { return SvPV_nolen(m_sv); }
   operator std::string() const { return SvPV_nolen(m_sv); }
   template <typename T, std::enable_if_t<detail::is_signed_integral_or_enum<T>::value, bool> = true>
@@ -129,6 +130,17 @@ struct scalar : type_base
   operator T() const { return static_cast<T>(SvUV(m_sv)); }
   template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
   operator T() const { return static_cast<T>(SvNV(m_sv)); }
+  template <typename T, std::enable_if_t<std::is_pointer<T>::value, bool> = true>
+  operator T() const
+  {
+    const char* type_name = detail::typemap::template get_name<T>(my_perl);
+    if (type_name && sv_isobject(m_sv) && sv_derived_from(m_sv, type_name))
+    {
+      IV tmp = SvIV(SvRV(m_sv));
+      return INT2PTR(T, tmp);
+    }
+    return nullptr;
+  }
 
   // release ownership of SV
   SV* release() noexcept

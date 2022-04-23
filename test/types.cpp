@@ -829,3 +829,20 @@ TEST_CASE("hash find")
 
   REQUIRE(SvREFCNT(src) == 1);
 }
+
+TEST_CASE("scalar cast from object reference to pointer", "[types]")
+{
+  struct foo {};
+  foo f;
+  foo* foo_ptr = &f;
+
+  auto my_perl = interp->get();
+  interp->new_class<foo>("fooclass");
+
+  SV* rv = sv_newmortal();
+  SV* sv = sv_setref_pv(rv, "fooclass", static_cast<void*>(foo_ptr));
+
+  perlbind::scalar scalar = SvREFCNT_inc(sv);
+  foo* from = static_cast<foo*>(scalar);
+  REQUIRE(from == foo_ptr);
+}

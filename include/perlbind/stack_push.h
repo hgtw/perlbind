@@ -17,7 +17,15 @@ struct pusher
   SV* pop() { return POPs; }
 
   void push(bool value) { XPUSHs(boolSV(value)); ++m_pushed; }
-  void push(const char* value) { mXPUSHp(value, strlen(value)); ++m_pushed; }
+  void push(const char* value)
+  {
+    if (!value)
+      XPUSHs(&PL_sv_undef);
+    else
+      mXPUSHp(value, strlen(value));
+
+    ++m_pushed;
+  }
   void push(const std::string& value) { mXPUSHp(value.c_str(), value.size()); ++m_pushed; }
   void push(scalar value) { mXPUSHs(value.release()); ++m_pushed; };
   void push(reference value) { mXPUSHs(value.release()); ++m_pushed; };

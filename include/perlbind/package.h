@@ -30,7 +30,8 @@ public:
   void add_base_class(const char* name)
   {
     std::string package_isa = m_name + "::ISA";
-    array isa_array = get_av(package_isa.c_str(), GV_ADD);
+    AV* av = get_av(package_isa.c_str(), GV_ADD);
+    array isa_array = reinterpret_cast<AV*>(SvREFCNT_inc(av));
     isa_array.push_back(name);
   }
 

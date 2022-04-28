@@ -137,11 +137,19 @@ TEST_CASE("overloads", "[package][function]")
   REQUIRE_NOTHROW(interp->eval("$result4 = foo::bar(\"10\");")); // still a string
   REQUIRE_NOTHROW(interp->eval("$result5 = foo::bar(20, \"str\");"));
 
+#ifdef PERLBIND_STRICT_NUMERIC_TYPES
   REQUIRE((get_sv("result1", 0) != nullptr && SvIV(get_sv("result1", 0)) == 1));
   REQUIRE((get_sv("result2", 0) != nullptr && SvIV(get_sv("result2", 0)) == 2));
   REQUIRE((get_sv("result3", 0) != nullptr && SvIV(get_sv("result3", 0)) == 3));
   REQUIRE((get_sv("result4", 0) != nullptr && SvIV(get_sv("result4", 0)) == 4));
   REQUIRE((get_sv("result5", 0) != nullptr && SvIV(get_sv("result5", 0)) == 5));
+#else
+  REQUIRE((get_sv("result1", 0) != nullptr && SvIV(get_sv("result1", 0)) == 1));
+  REQUIRE((get_sv("result2", 0) != nullptr && SvIV(get_sv("result2", 0)) == 2));
+  REQUIRE((get_sv("result3", 0) != nullptr && SvIV(get_sv("result3", 0)) == 2));
+  REQUIRE((get_sv("result4", 0) != nullptr && SvIV(get_sv("result4", 0)) == 4));
+  REQUIRE((get_sv("result5", 0) != nullptr && SvIV(get_sv("result5", 0)) == 5));
+#endif
 
   SECTION("non-matching overload")
   {

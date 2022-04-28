@@ -1,5 +1,10 @@
 #pragma once
 
+// Defining PERLBIND_STRICT_NUMERIC_TYPES will enable strict type checks
+// for integers and floats.This is required for overloads that depend on
+// int and float type differences.
+// #define PERLBIND_STRICT_NUMERIC_TYPES
+
 // defining PERL_NO_GET_CONTEXT gets context from local variable "my_perl"
 // instead of calling Perl_get_context() in macros
 #define PERL_NO_GET_CONTEXT

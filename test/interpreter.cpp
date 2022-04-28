@@ -11,6 +11,10 @@ std::unique_ptr<perlbind::interpreter> interp;
 
 int main(int argc, char* argv[])
 {
+#ifdef PERLBIND_STRICT_NUMERIC_TYPES
+  printf("Running tests with PERLBIND_STRICT_NUMERIC_TYPES\n");
+#endif
+
   interp = std::make_unique<perlbind::interpreter>();
 
   // setup typemaps so we can confirm same ids in another compilation unit

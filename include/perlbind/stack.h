@@ -62,12 +62,45 @@ public:
     return get_stack(std::forward<Tuple>(types), make_sequence());
   }
 
+  std::string types()
+  {
+    std::string args;
+    for (int i = 0; i < items; ++i)
+    {
+      args += get_type_name(ST(i));
+      if (i < (items - 1))
+        args += ", ";
+    }
+    return args.empty() ? "void" : args;
+  }
+
 protected:
   int ax = 0;
   int items = 0;
   SV** mark = nullptr;
   const char* m_pkg_name = nullptr;
   const char* m_sub_name = nullptr;
+
+  std::string get_type_name(SV* item)
+  {
+    switch (SvTYPE(item))
+    {
+    case SVt_NULL: return "<undefined>";
+    case SVt_NV:   return "double";
+    case SVt_PV:   return "string";
+    case SVt_PVAV: return "array";
+    case SVt_PVHV: return "hash";
+    case SVt_IV:
+      if (sv_isobject(item))
+        return std::string(sv_reftype(SvRV(item), true)) + "*";
+      else if (SvROK(item))
+        return "ref";
+      else
+        return "int";
+    default:
+      return sv_reftype(item, true);
+    }
+  }
 
 private:
   template <typename T>

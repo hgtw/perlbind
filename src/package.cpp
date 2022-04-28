@@ -63,8 +63,8 @@ void package::xsub(PerlInterpreter* my_perl, CV* cv)
     overloads += func->get_signature() + "\n ";
   }
 
-  Perl_croak(aTHX_ "no overload of '%s' matched the %d argument(s), candidates:\n %s",
-             stack.name().c_str(), stack.size(), overloads.c_str());
+  Perl_croak(aTHX_ "no overload of '%s' matched the %d argument(s):\n(%s)\ncandidates:\n %s",
+             stack.name().c_str(), stack.size(), stack.types().c_str(), overloads.c_str());
 }
 
 } // namespace perlbind

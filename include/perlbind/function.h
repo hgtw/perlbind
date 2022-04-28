@@ -75,8 +75,8 @@ struct function : public function_base, function_traits<T>
     {
       auto sig = function::sig_t::str();
       int count = std::is_member_function_pointer<T>::value ? stack.size() - 1 : stack.size();
-      Perl_croak(aTHX_ "'%s(%s)' called with %d argument(s), expected %d",
-                 stack.name().c_str(), sig.c_str(), count, function::arity);
+      Perl_croak(aTHX_ "'%s(%s)' called with %d argument(s), expected %d\n argument(s): (%s)\n",
+                 stack.name().c_str(), sig.c_str(), count, function::arity, stack.types().c_str());
     }
 
     call_impl(stack, std::is_void<function::return_t>());

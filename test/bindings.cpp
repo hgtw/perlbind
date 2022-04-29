@@ -137,7 +137,13 @@ TEST_CASE("overloads", "[package][function]")
   REQUIRE_NOTHROW(interp->eval("$result4 = foo::bar(\"10\");")); // still a string
   REQUIRE_NOTHROW(interp->eval("$result5 = foo::bar(20, \"str\");"));
 
-#ifdef PERLBIND_STRICT_NUMERIC_TYPES
+#ifdef PERLBIND_NO_STRICT_SCALAR_TYPES
+  REQUIRE((get_sv("result1", 0) != nullptr && SvIV(get_sv("result1", 0)) == 1));
+  REQUIRE((get_sv("result2", 0) != nullptr && SvIV(get_sv("result2", 0)) == 2));
+  REQUIRE((get_sv("result3", 0) != nullptr && SvIV(get_sv("result3", 0)) == 2));
+  REQUIRE((get_sv("result4", 0) != nullptr && SvIV(get_sv("result4", 0)) == 2));
+  REQUIRE((get_sv("result5", 0) != nullptr && SvIV(get_sv("result5", 0)) == 5));
+#elif PERLBIND_STRICT_NUMERIC_TYPES
   REQUIRE((get_sv("result1", 0) != nullptr && SvIV(get_sv("result1", 0)) == 1));
   REQUIRE((get_sv("result2", 0) != nullptr && SvIV(get_sv("result2", 0)) == 2));
   REQUIRE((get_sv("result3", 0) != nullptr && SvIV(get_sv("result3", 0)) == 3));
@@ -153,7 +159,12 @@ TEST_CASE("overloads", "[package][function]")
 
   SECTION("non-matching overload")
   {
+#ifdef PERLBIND_NO_STRICT_SCALAR_TYPES
+    REQUIRE_NOTHROW(interp->eval("$overload4 = foo::bar(20, 10);"));
+    REQUIRE_THROWS(interp->eval("$overload4 = foo::bar(20, 10, 5);"));
+#else
     REQUIRE_THROWS(interp->eval("$overload4 = foo::bar(20, 10);"));
+#endif
   }
 }
 

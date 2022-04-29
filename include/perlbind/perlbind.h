@@ -5,6 +5,13 @@
 // int and float type differences.
 // #define PERLBIND_STRICT_NUMERIC_TYPES
 
+// Defining PERLBIND_NO_STRICT_SCALAR_TYPES will disable strict type checks
+// for all int, float, and string function arguments. These types will only
+// be checked for scalar validity and converted to the function's expected
+// paramter type. This will break overloads that depend on distinct types.
+// This option overrides PERLBIND_STRICT_NUMERIC_TYPES.
+//#define PERLBIND_NO_STRICT_SCALAR_TYPES
+
 // defining PERL_NO_GET_CONTEXT gets context from local variable "my_perl"
 // instead of calling Perl_get_context() in macros
 #define PERL_NO_GET_CONTEXT

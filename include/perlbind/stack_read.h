@@ -13,7 +13,9 @@ struct read_as<T, std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>
 {
   static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-#ifndef PERLBIND_STRICT_NUMERIC_TYPES
+#ifdef PERLBIND_NO_STRICT_SCALAR_TYPES
+    return SvTYPE(ST(i)) < SVt_PVAV;
+#elif !defined PERLBIND_STRICT_NUMERIC_TYPES
     return SvNIOK(ST(i));
 #else
     return SvIOK(ST(i));
@@ -35,7 +37,9 @@ struct read_as<T, std::enable_if_t<std::is_floating_point<T>::value>>
 {
   static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-#ifndef PERLBIND_STRICT_NUMERIC_TYPES
+#ifdef PERLBIND_NO_STRICT_SCALAR_TYPES
+    return SvTYPE(ST(i)) < SVt_PVAV;
+#elif !defined PERLBIND_STRICT_NUMERIC_TYPES
     return SvNIOK(ST(i));
 #else
     return SvNOK(ST(i));
@@ -57,7 +61,11 @@ struct read_as<const char*>
 {
   static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
+#ifdef PERLBIND_NO_STRICT_SCALAR_TYPES
+    return SvTYPE(ST(i)) < SVt_PVAV;
+#else
     return SvPOK(ST(i));
+#endif
   }
 
   static const char* get(PerlInterpreter* my_perl, int i, int ax, int items)

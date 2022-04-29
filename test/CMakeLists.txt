@@ -41,3 +41,4 @@ endfunction()
 
 add_tests()
 add_tests(PERLBIND_STRICT_NUMERIC_TYPES)
+add_tests(PERLBIND_NO_STRICT_SCALAR_TYPES)

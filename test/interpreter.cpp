@@ -11,7 +11,9 @@ std::unique_ptr<perlbind::interpreter> interp;
 
 int main(int argc, char* argv[])
 {
-#ifdef PERLBIND_STRICT_NUMERIC_TYPES
+#ifdef PERLBIND_NO_STRICT_SCALAR_TYPES
+  printf("Running tests with PERLBIND_NO_STRICT_SCALAR_TYPES\n");
+#elif PERLBIND_STRICT_NUMERIC_TYPES
   printf("Running tests with PERLBIND_STRICT_NUMERIC_TYPES\n");
 #endif
 

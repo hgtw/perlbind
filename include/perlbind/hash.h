@@ -1,8 +1,6 @@
 #pragma once
 
 #include "types.h"
-#include "iterator.h"
-#include <stdexcept>
 #include <string>
 
 namespace perlbind {
@@ -31,16 +29,8 @@ struct hash : public type_base
     : type_base(), m_hv(copy_hash(value)) {}
   hash(HV*&& value) noexcept
     : type_base(), m_hv(value) {} // take ownership
-  hash(scalar ref)
-    : type_base(ref.my_perl)
-  {
-    if (!ref.is_hash_ref())
-      throw std::runtime_error("cannot construct hash from non-hash reference");
-
-    reset(reinterpret_cast<HV*>(SvREFCNT_inc(*ref)));
-  }
-  hash(scalar_proxy proxy)
-    : hash(scalar(SvREFCNT_inc(proxy.sv()))) {}
+  hash(scalar ref);
+  hash(scalar_proxy proxy);
 
   hash& operator=(const hash& other) noexcept
   {
@@ -88,8 +78,8 @@ struct hash : public type_base
     m_hv = value;
   }
 
-  scalar at(const char* key) { return at(key, strlen(key)); }
-  scalar at(const std::string& key) { return at(key.c_str(), key.size()); }
+  scalar at(const char* key);
+  scalar at(const std::string& key);
   void clear() noexcept { hv_clear(m_hv); }
   bool exists(const char* key) const
   {
@@ -99,14 +89,8 @@ struct hash : public type_base
   {
     return hv_exists(m_hv, key.c_str(), static_cast<I32>(key.size()));
   }
-  void insert(const char* key, scalar value)
-  {
-    insert(key, strlen(key), value);
-  }
-  void insert(const std::string& key, scalar value)
-  {
-    insert(key.c_str(), key.size(), value);
-  }
+  void insert(const char* key, scalar value);
+  void insert(const std::string& key, scalar value);
   void remove(const char* key)
   {
     hv_delete(m_hv, key, static_cast<I32>(strlen(key)), 0);
@@ -120,73 +104,19 @@ struct hash : public type_base
 
   // returns a proxy that takes ownership of one reference to the SV value
   // creates an undef SV entry for the key if it doesn't exist
-  scalar_proxy operator[](const std::string& key)
-  {
-    return scalar_proxy(my_perl, at(key.c_str(), key.size()));
-  }
+  scalar_proxy operator[](const std::string& key);
 
-  iterator begin() const noexcept
-  {
-    hv_iterinit(m_hv);
-    return { my_perl, m_hv, hv_iternext(m_hv) };
-  }
-
-  iterator end() const noexcept
-  {
-    return { my_perl, m_hv, nullptr };
-  }
-
-  iterator find(const char* key)
-  {
-    return find(key, static_cast<I32>(strlen(key)));
-  }
-
-  iterator find(const std::string& key)
-  {
-    return find(key.c_str(), static_cast<I32>(key.size()));
-  }
+  iterator begin() const noexcept;
+  iterator end() const noexcept;
+  iterator find(const char* key);
+  iterator find(const std::string& key);
 
 private:
-  scalar at(const char* key, size_t size)
-  {
-    SV** sv = hv_fetch(m_hv, key, static_cast<I32>(size), 1);
-    return SvREFCNT_inc(*sv);
-  }
+  scalar at(const char* key, size_t size);
+  iterator find(const char* key, size_t size);
+  void insert(const char* key, size_t size, scalar value);
 
-  iterator find(const char* key, size_t size)
-  {
-    // key sv made mortal with SVs_TEMP flag
-    SV* keysv = newSVpvn_flags(key, static_cast<I32>(size), SVs_TEMP);
-    HE* he = hv_fetch_ent(m_hv, keysv, 0, 0);
-    return { my_perl, m_hv, he };
-  }
-
-  void insert(const char* key, size_t size, scalar value)
-  {
-    if (!hv_store(m_hv, key, static_cast<I32>(size), SvREFCNT_inc(value), 0))
-    {
-      SvREFCNT_dec(value);
-    }
-  }
-
-  HV* copy_hash(HV* other) noexcept
-  {
-    HV* hv = newHV();
-
-    hv_iterinit(other);
-    while (HE* entry = hv_iternext(other))
-    {
-      size_t key_size;
-      auto key   = HePV(entry, key_size);
-      auto value = newSVsv(HeVAL(entry));
-      if (!hv_store(hv, key, static_cast<I32>(key_size), value, HeHASH(entry)))
-      {
-        SvREFCNT_dec(value);
-      }
-    }
-
-    return hv;
-  }
+  HV* copy_hash(HV* other) noexcept;
 
   HV* m_hv = nullptr;
 };

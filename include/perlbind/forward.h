@@ -8,11 +8,6 @@ class xsub_stack;
 struct function_base;
 struct array_iterator;
 struct hash_iterator;
-namespace typemap
-{
-  template <typename T>
-  const char* get_name(PerlInterpreter* my_perl);
-}
 
 } // namespace detail
 

@@ -44,10 +44,10 @@
 #include <perlbind/forward.h>
 #include <perlbind/util.h>
 #include <perlbind/traits.h>
-#include <perlbind/scalar.h>
-#include <perlbind/array.h>
 #include <perlbind/hash.h>
 #include <perlbind/typemap.h>
+#include <perlbind/scalar.h>
+#include <perlbind/array.h>
 #include <perlbind/stack.h>
 #include <perlbind/subcaller.h>
 #include <perlbind/function.h>

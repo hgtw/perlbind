@@ -5,8 +5,9 @@
 namespace perlbind { namespace stack {
 
 // base class for pushing value types to perl stack
-// methods use mXPUSH macros to extend the stack if necessary and mortalize SVs
-// this supports pushing multiple values where (X)PUSH variants that depend on TARG do not
+// methods use macros that push new mortalized SVs but do not extend the stack
+// the stack is only extended when pushing an array, hash, or using push_args().
+// this is because for xsubs the "stack is always large enough to take one return value"
 struct pusher
 {
   virtual ~pusher() = default;
@@ -16,19 +17,19 @@ struct pusher
 
   SV* pop() { return POPs; }
 
-  void push(bool value) { XPUSHs(boolSV(value)); ++m_pushed; }
+  void push(bool value) { PUSHs(boolSV(value)); ++m_pushed; }
   void push(const char* value)
   {
     if (!value)
-      XPUSHs(&PL_sv_undef);
+      PUSHs(&PL_sv_undef);
     else
-      mXPUSHp(value, strlen(value));
+      mPUSHp(value, strlen(value));
 
     ++m_pushed;
   }
-  void push(const std::string& value) { mXPUSHp(value.c_str(), value.size()); ++m_pushed; }
-  void push(scalar value) { mXPUSHs(value.release()); ++m_pushed; };
-  void push(reference value) { mXPUSHs(value.release()); ++m_pushed; };
+  void push(const std::string& value) { mPUSHp(value.c_str(), value.size()); ++m_pushed; }
+  void push(scalar value) { mPUSHs(value.release()); ++m_pushed; };
+  void push(reference value) { mPUSHs(value.release()); ++m_pushed; };
 
   void push(array value)
   {
@@ -58,13 +59,13 @@ struct pusher
   }
 
   template <typename T, std::enable_if_t<detail::is_signed_integral_or_enum<T>::value, bool> = true>
-  void push(T value) { mXPUSHi(static_cast<IV>(value)); ++m_pushed; }
+  void push(T value) { mPUSHi(static_cast<IV>(value)); ++m_pushed; }
 
   template <typename T, std::enable_if_t<std::is_unsigned<T>::value, bool> = true>
-  void push(T value) { mXPUSHu(value); ++m_pushed; }
+  void push(T value) { mPUSHu(value); ++m_pushed; }
 
   template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
-  void push(T value) { mXPUSHn(value); ++m_pushed; }
+  void push(T value) { mPUSHn(value); ++m_pushed; }
 
   template <typename T, std::enable_if_t<std::is_pointer<T>::value, bool> = true>
   void push(T value)
@@ -77,7 +78,7 @@ struct pusher
 
     SV* sv = sv_newmortal();
     sv_setref_pv(sv, type_name, static_cast<void*>(value));
-    XPUSHs(sv);
+    PUSHs(sv);
     ++m_pushed;
   };
 
@@ -85,24 +86,32 @@ struct pusher
   {
     SV* sv = sv_newmortal();
     sv_setref_pv(sv, nullptr, value); // unblessed
-    XPUSHs(sv);
+    PUSHs(sv);
     ++m_pushed;
   }
 
   template <typename... Args>
-  void push_args(Args&&... args) {};
-
-  template <typename T, typename... Args>
-  void push_args(T value, Args&&... args)
+  void push_args(Args&&... args)
   {
-    push(value); // little inefficient, each extends
-    push_args(std::forward<Args>(args)...);
-  }
+    EXTEND(sp, sizeof...(Args));
+    push_args_impl(std::forward<Args>(args)...);
+  };
 
 protected:
   PerlInterpreter* my_perl = nullptr;
   SV** sp = nullptr;
   int m_pushed = 0;
+
+private:
+  template <typename... Args>
+  void push_args_impl(Args&&... args) {}
+
+  template <typename T, typename... Args>
+  void push_args_impl(T value, Args&&... args)
+  {
+    push(value);
+    push_args(std::forward<Args>(args)...);
+  }
 };
 
 } // namespace stack

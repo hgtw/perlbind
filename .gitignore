@@ -3,6 +3,10 @@
 !.editorconfig
 !CMakeLists.txt
 !LICENSE
+!README.md
+
+!doc/
+!doc/**
 
 !include/
 !include/**

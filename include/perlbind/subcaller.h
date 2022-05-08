@@ -21,16 +21,25 @@ public:
     LEAVE; // leave scope, decref mortals and values returned by perl
   }
 
+  template <typename T, typename... Args, std::enable_if_t<std::is_void<T>::value, bool> = true>
+  auto call_sub(const char* subname, Args&&... args)
+  {
+    call_sub_impl(subname, G_EVAL|G_VOID, std::forward<Args>(args)...);
+  }
+
   template <typename T, typename... Args, std::enable_if_t<std::is_integral<T>::value, bool> = true>
   auto call_sub(const char* subname, Args&&... args)
   {
+    T result = 0;
+
     try
     {
       int count = call_sub_impl(subname, G_EVAL|G_SCALAR, std::forward<Args>(args)...);
 
-      if (count != 1)
+      if (count == 1)
       {
-        throw std::runtime_error("Expected a single result from G_SCALAR sub call");
+        SV* sv_result = pop();
+        result = static_cast<T>(SvIV(sv_result));
       }
     }
     catch (...)
@@ -39,13 +48,7 @@ public:
       throw;
     }
 
-    SV* result = pop();
-    if (SvTYPE(result) != SVt_IV)
-    {
-      throw std::runtime_error("Expected an integer result from sub call");
-    }
-
-    return static_cast<T>(SvIV(result));
+    return result;
   }
 
 private:

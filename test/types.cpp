@@ -846,3 +846,17 @@ TEST_CASE("scalar cast from object reference to pointer", "[types]")
   foo* from = static_cast<foo*>(scalar);
   REQUIRE(from == foo_ptr);
 }
+
+TEST_CASE("proxy assignment to another proxy", "[types]")
+{
+  perlbind::array a;
+  a.push_back(1111);
+  SV* orig = a[0].sv();
+
+  perlbind::array b;
+  b[0] = a[0]; // this should copy the scalar proxy value
+
+  REQUIRE(static_cast<int>(b[0]) == 1111);
+  REQUIRE(b[0].sv() != a[0].sv());
+  REQUIRE(SvREFCNT(orig) == 1);
+}

@@ -226,10 +226,15 @@ struct scalar_proxy
   }
 
   // assigning scalar to proxy, the source SV is modified (arr[i] = "new value")
-  template <typename T, std::enable_if_t<std::is_convertible<T, scalar>::value, bool> = true>
-  scalar_proxy& operator=(T value)
+  scalar_proxy& operator=(scalar value)
   {
     m_value = value;
+    return *this;
+  }
+
+  scalar_proxy& operator=(const scalar_proxy& other)
+  {
+    m_value = other.m_value;
     return *this;
   }
 

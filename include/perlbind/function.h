@@ -79,7 +79,14 @@ struct function : public function_base, function_traits<T>
                  stack.name().c_str(), sig.c_str(), count, function::arity, stack.types().c_str());
     }
 
-    call_impl(stack, std::is_void<function::return_t>());
+    try
+    {
+      call_impl(stack, std::is_void<function::return_t>());
+    }
+    catch (std::exception& e)
+    {
+      Perl_croak(aTHX_ "%s", e.what());
+    }
   }
 
 private:

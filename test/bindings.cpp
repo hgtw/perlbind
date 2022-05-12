@@ -216,3 +216,16 @@ TEST_CASE("typemap ids in another translation unit", "[interpreter][typemap]")
   REQUIRE(perlbind::detail::usertype<double>::id() == "1");
   REQUIRE(perlbind::detail::usertype<int>::id() == "0");
 }
+
+TEST_CASE("exception in function binding call", "[function]")
+{
+  struct foo
+  {
+    static void catchbar(perlbind::scalar a) { perlbind::hash b = a; }
+  };
+
+  auto package = interp->new_package("foo");
+  package.add("catchbar", &foo::catchbar);
+
+  REQUIRE_THROWS(interp->eval("foo::catchbar(1);"));
+}

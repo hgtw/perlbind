@@ -142,6 +142,9 @@ struct scalar : type_base
     return nullptr;
   }
 
+  template <typename T>
+  T as() const { return static_cast<T>(*this); }
+
   // release ownership of SV
   SV* release() noexcept
   {
@@ -208,6 +211,9 @@ struct scalar_proxy
 
   SV* sv() const { return m_value; }
   const char* c_str() const { return static_cast<const char*>(m_value); }
+
+  template <typename T>
+  T as() const { return m_value.as<T>(); }
 
   operator std::string() const { return m_value; }
 

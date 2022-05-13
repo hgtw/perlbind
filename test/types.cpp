@@ -58,6 +58,15 @@ TEST_CASE("typecasts from scalar", "[types]")
   REQUIRE(SvREFCNT(value.sv()) == 1);
 }
 
+TEST_CASE("scalar as<T>", "[types]")
+{
+  perlbind::scalar value = 123;
+  REQUIRE(static_cast<int>(value) == value.as<int>());
+  value = "str";
+  REQUIRE(strcmp(static_cast<const char*>(value), value.as<const char*>()) == 0);
+  REQUIRE(strcmp(value.as<const char*>(), value.c_str()) == 0);
+}
+
 TEST_CASE("reference", "[types]")
 {
   perlbind::scalar foo = 1;
@@ -326,8 +335,11 @@ TEST_CASE("arrays", "[types]")
 
   REQUIRE(arr.size() == 3);
   REQUIRE(static_cast<int>(arr[0]) == 1);
+  REQUIRE(arr[0].as<int>() == 1);
   REQUIRE(strcmp(static_cast<const char*>(arr[1]), "two") == 0);
+  REQUIRE(strcmp(arr[1].as<const char*>(), "two") == 0);
   REQUIRE(static_cast<float>(arr[2]) == 3.0f);
+  REQUIRE(arr[2].as<float>() == 3.0f);
 }
 
 TEST_CASE("array index proxy", "[types]")

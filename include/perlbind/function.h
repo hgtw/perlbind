@@ -22,19 +22,31 @@ struct base_traits
     "parameters. Prefer using reference parameters instead.");
 };
 
-template <typename Ret, typename... Args>
-struct function_traits;
+template <typename T, bool = std::is_class<T>::value>
+struct function_traits : public function_traits<decltype(&T::operator()), true> {};
 
 template <typename Ret, typename... Args>
-struct function_traits<Ret(*)(Args...)> : base_traits<Ret, void, Args...>
+struct function_traits<Ret(*)(Args...), false> : base_traits<Ret, void, Args...>
 {
   using type = Ret(*)(Args...);
 };
 
 template <typename Ret, typename Class, typename... Args>
-struct function_traits<Ret(Class::*)(Args...)> : base_traits<Ret, Class, Args...>
+struct function_traits<Ret(Class::*)(Args...), false> : base_traits<Ret, Class, Args...>
 {
   using type = Ret(Class::*)(Args...);
+};
+
+template <typename Ret, typename Class, typename... Args>
+struct function_traits<Ret(Class::*)(Args...) const, false> : base_traits<Ret, Class, Args...>
+{
+  using type = Ret(Class::*)(Args...) const;
+};
+
+template <typename Ret, typename Class, typename... Args>
+struct function_traits<Ret(Class::*)(Args...) const, true> : base_traits<Ret, void, Args...>
+{
+  using type = Ret(*)(Args...);
 };
 
 // represents a bound native function
@@ -56,7 +68,7 @@ struct function : public function_base, function_traits<T>
   using return_t = typename function::return_t;
 
   function() = delete;
-  function(PerlInterpreter* interp, target_t func)
+  function(PerlInterpreter* interp, T func)
     : my_perl(interp), m_func(func) {}
 
   std::string get_signature() const override
@@ -129,7 +141,7 @@ private:
   }
 
   PerlInterpreter* my_perl = nullptr;
-  target_t m_func;
+  T m_func;
 };
 
 } // namespace detail

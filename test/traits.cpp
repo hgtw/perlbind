@@ -48,6 +48,18 @@ TEST_CASE("function traits", "[traits][function]")
     STATIC_REQUIRE(traits::stack_arity == 3);
     STATIC_REQUIRE(std::is_same<traits::stack_tuple, std::tuple<Foo*, int, float>>::value);
   }
+
+  SECTION("lambdas")
+  {
+    auto lambda = [](int, double) -> bool { return true; };
+    using traits = perlbind::detail::function<decltype(lambda)>;
+
+    STATIC_REQUIRE(std::is_same<traits::type, bool(*)(int, double)>::value);
+    STATIC_REQUIRE(std::is_same<traits::return_t, bool>::value);
+    STATIC_REQUIRE(traits::arity == 2);
+    STATIC_REQUIRE(traits::stack_arity == 2);
+    STATIC_REQUIRE(std::is_same<traits::stack_tuple, std::tuple<int, double>>::value);
+  }
 }
 
 TEST_CASE("function traits vararg array and hash", "[traits][function]")

@@ -17,7 +17,7 @@ public:
   // overloads with same name must be explicit (default parameters not supported)
   // overloads have a runtime lookup cost and chooses the first compatible overload
   template <typename T>
-  void add(const char* name, T&& func)
+  void add(const char* name, T func)
   {
     // ownership of function object is given to perl
     auto function = new detail::function<T>(my_perl, func);

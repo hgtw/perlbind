@@ -57,6 +57,16 @@ TEST_CASE("class member binding", "[package][function]")
   REQUIRE_THROWS(interp->eval("$fooclass->foo_method('invalid args');"));
 }
 
+TEST_CASE("lambda bindings", "[function]")
+{
+  auto my_perl = interp->get();
+  auto package = interp->new_package("foo");
+  package.add("lambda", [](int a) -> int { return 1 + a; });
+
+  REQUIRE_NOTHROW(interp->eval("$result = foo::lambda(1);"));
+  REQUIRE((get_sv("result", 0) != nullptr && SvIV(get_sv("result", 0)) == 2));
+}
+
 struct derived { static derived* getinst(); };
 derived g_derived;
 derived* derived::getinst() { return &g_derived; }

@@ -13,13 +13,15 @@ struct base_traits
                                          std::tuple<Class*, Args...>>;
   static constexpr int arity = sizeof...(Args);
   static constexpr int stack_arity = sizeof...(Args) + (std::is_void<Class>::value ? 0 : 1);
-  static constexpr bool has_array = is_any<array, Args...>::value;
-  static constexpr bool has_hash  = is_any<hash, Args...>::value;
-  static constexpr bool is_vararg = has_array || has_hash;
+  static constexpr int vararg_count = count_of<array, Args...>::value +
+                                      count_of<hash, Args...>::value;
+  static constexpr bool is_vararg = vararg_count > 0;
+  static constexpr bool is_vararg_last = is_last<array, Args...>::value ||
+                                         is_last<hash, Args...>::value;
 
-  static_assert(!((has_array || has_hash) && stack_arity > 1),
-    "A function expecting an array or hash must not have any other "
-    "parameters. Prefer using reference parameters instead.");
+  static_assert(!is_vararg || (vararg_count == 1 && is_vararg_last),
+    "A function may only accept a single array or hash and it must be "
+    "be the last parameter. Prefer using reference parameters instead.");
 };
 
 template <typename T, bool = std::is_class<T>::value>

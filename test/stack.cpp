@@ -127,18 +127,43 @@ TEST_CASE("read array from perl", "[stack][types]")
       REQUIRE(static_cast<int>(arr[3]) == 1);
       return 4000;
     }
+    static int send_array_with_arg(const char* str, perlbind::array arr)
+    {
+      REQUIRE(strcmp(str, "my string") == 0);
+      REQUIRE(SvREFCNT(arr.sv()) == 1); // ours only from stack reader
+      REQUIRE(arr.size() == 4);
+      REQUIRE(static_cast<int>(arr[0]) == 4);
+      REQUIRE(static_cast<int>(arr[1]) == 3);
+      REQUIRE(static_cast<int>(arr[2]) == 2);
+      REQUIRE(static_cast<int>(arr[3]) == 1);
+      return 4100;
+    }
   };
 
   auto my_perl = interp->get();
   auto package = interp->new_package("foo");
   package.add("send_array", &foo::send_array);
+  package.add("send_array_with_arg", &foo::send_array_with_arg);
 
-  REQUIRE_NOTHROW(interp->eval(R"script(
-    @arr = (4, 3, 2, 1);
-    $result = foo::send_array(@arr);
-  )script"));
+  SECTION("single array arg")
+  {
+    REQUIRE_NOTHROW(interp->eval(R"script(
+      @arr = (4, 3, 2, 1);
+      $result = foo::send_array(@arr);
+    )script"));
 
-  REQUIRE((get_sv("result", 0) != nullptr && SvIV(get_sv("result", 0)) == 4000));
+    REQUIRE((get_sv("result", 0) != nullptr && SvIV(get_sv("result", 0)) == 4000));
+  }
+
+  SECTION("array with another arg")
+  {
+    REQUIRE_NOTHROW(interp->eval(R"script(
+      @arr = (4, 3, 2, 1);
+      $result = foo::send_array_with_arg("my string", @arr);
+    )script"));
+
+    REQUIRE((get_sv("result", 0) != nullptr && SvIV(get_sv("result", 0)) == 4100));
+  }
 }
 
 TEST_CASE("read array reference from perl", "[stack][types]")
@@ -269,18 +294,43 @@ TEST_CASE("read hash from perl", "[stack][types]")
 
       return 6000;
     }
+    static int send_hash_with_arg(const char* str, perlbind::hash h)
+    {
+      REQUIRE(strcmp(str, "my string") == 0);
+      REQUIRE(SvREFCNT(h.sv()) == 1); // ours only from stack reader
+      REQUIRE(h.size() == 3);
+      REQUIRE(static_cast<int>(h["k1"]) == 99);
+      REQUIRE(std::string(h["k2"].c_str()) == "val");
+      REQUIRE(static_cast<float>(h["k3"]) == 5.0f);
+
+      return 6100;
+    }
   };
 
   auto my_perl = interp->get();
   auto package = interp->new_package("foo");
   package.add("send_hash", &foo::send_hash);
+  package.add("send_hash_with_arg", &foo::send_hash_with_arg);
 
-  REQUIRE_NOTHROW(interp->eval(R"script(
-    %h = ('k1' => 99, 'k2' => 'val', 'k3' => 5.0);
-    $result = foo::send_hash(%h);
-  )script"));
+  SECTION("single hash arg")
+  {
+    REQUIRE_NOTHROW(interp->eval(R"script(
+      %h = ('k1' => 99, 'k2' => 'val', 'k3' => 5.0);
+      $result = foo::send_hash(%h);
+    )script"));
 
-  REQUIRE((get_sv("result", 0) != nullptr && SvIV(get_sv("result", 0)) == 6000));
+    REQUIRE((get_sv("result", 0) != nullptr && SvIV(get_sv("result", 0)) == 6000));
+  }
+
+  SECTION("hash with another arg")
+  {
+    REQUIRE_NOTHROW(interp->eval(R"script(
+      %h = ('k1' => 99, 'k2' => 'val', 'k3' => 5.0);
+      $result = foo::send_hash_with_arg("my string", %h);
+    )script"));
+
+    REQUIRE((get_sv("result", 0) != nullptr && SvIV(get_sv("result", 0)) == 6100));
+  }
 }
 
 TEST_CASE("read hash reference from perl", "[stack][types]")

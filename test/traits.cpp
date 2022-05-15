@@ -24,6 +24,28 @@ TEST_CASE("is_signed_integral or enum trait", "[traits]")
   STATIC_REQUIRE(perlbind::detail::is_signed_integral_or_enum<eFoo>::value == true);
 }
 
+TEST_CASE("count_of trait", "[traits]")
+{
+  STATIC_REQUIRE(perlbind::detail::count_of<perlbind::array>::value == 0);
+  STATIC_REQUIRE(perlbind::detail::count_of<perlbind::array, int>::value == 0);
+  STATIC_REQUIRE(perlbind::detail::count_of<perlbind::array, perlbind::array>::value == 1);
+  STATIC_REQUIRE(perlbind::detail::count_of<perlbind::array, perlbind::array, int>::value == 1);
+  STATIC_REQUIRE(perlbind::detail::count_of<perlbind::array, int, perlbind::array>::value == 1);
+  STATIC_REQUIRE(perlbind::detail::count_of<perlbind::array, perlbind::array, perlbind::array>::value == 2);
+  STATIC_REQUIRE(perlbind::detail::count_of<perlbind::array, int, perlbind::array, int>::value == 1);
+}
+
+TEST_CASE("is_last trait", "[traits]")
+{
+  STATIC_REQUIRE(perlbind::detail::is_last<perlbind::array>::value == false);
+  STATIC_REQUIRE(perlbind::detail::is_last<perlbind::array, int>::value == false);
+  STATIC_REQUIRE(perlbind::detail::is_last<perlbind::array, perlbind::array>::value == true);
+  STATIC_REQUIRE(perlbind::detail::is_last<perlbind::array, perlbind::array, int>::value == false);
+  STATIC_REQUIRE(perlbind::detail::is_last<perlbind::array, int, perlbind::array>::value == true);
+  STATIC_REQUIRE(perlbind::detail::is_last<perlbind::array, perlbind::array, perlbind::array>::value == true);
+  STATIC_REQUIRE(perlbind::detail::is_last<perlbind::array, int, perlbind::array, int>::value == false);
+}
+
 TEST_CASE("function traits", "[traits][function]")
 {
   SECTION("regular functions")
@@ -64,23 +86,18 @@ TEST_CASE("function traits", "[traits][function]")
 
 TEST_CASE("function traits vararg array and hash", "[traits][function]")
 {
+  struct Foo{};
   using Fn1 = void(*)(int);
   using Fn2 = int(*)(perlbind::array);
   using Fn3 = perlbind::array(*)();
   using Fn4 = perlbind::array(*)(perlbind::hash);
-
-  STATIC_REQUIRE(perlbind::detail::function_traits<Fn1>::has_array == false);
-  STATIC_REQUIRE(perlbind::detail::function_traits<Fn2>::has_array == true);
-  STATIC_REQUIRE(perlbind::detail::function_traits<Fn3>::has_array == false);
-  STATIC_REQUIRE(perlbind::detail::function_traits<Fn4>::has_array == false);
-
-  STATIC_REQUIRE(perlbind::detail::function_traits<Fn1>::has_hash == false);
-  STATIC_REQUIRE(perlbind::detail::function_traits<Fn2>::has_hash == false);
-  STATIC_REQUIRE(perlbind::detail::function_traits<Fn3>::has_hash == false);
-  STATIC_REQUIRE(perlbind::detail::function_traits<Fn4>::has_hash == true);
+  using Fn5 = void(Foo::*)(perlbind::array);
+  using Fn6 = void(*)(Foo*, perlbind::array);
 
   STATIC_REQUIRE(perlbind::detail::function_traits<Fn1>::is_vararg == false);
   STATIC_REQUIRE(perlbind::detail::function_traits<Fn2>::is_vararg == true);
   STATIC_REQUIRE(perlbind::detail::function_traits<Fn3>::is_vararg == false);
   STATIC_REQUIRE(perlbind::detail::function_traits<Fn4>::is_vararg == true);
+  STATIC_REQUIRE(perlbind::detail::function_traits<Fn5>::is_vararg == true);
+  STATIC_REQUIRE(perlbind::detail::function_traits<Fn6>::is_vararg == true);
 }

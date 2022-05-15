@@ -139,8 +139,8 @@ the specified pointer type then a `nullptr` is passed instead. This differs from
 default behavior which would either croak or treat the function as incompatible
 (for overloads) due to an invalid expected argument.
 
-> Function bindings that have a `perlbind::array` or `perlbind::hash` parameter
-> may not have any other parameters. These types are variable length so the rest
+> Function bindings may only have a single `perlbind::array` or `perlbind::hash`
+> and it must be the last parameter. These types are variable length so the rest
 > of the stack will be consumed as part of them. A `perlbind::reference` should
 > be used instead to support passing array or hash references with other arguments.
 

@@ -216,7 +216,7 @@ struct read_as<array>
 {
   static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    return items > 0;
+    return items > i;
   }
 
   static array get(PerlInterpreter* my_perl, int i, int ax, int items)
@@ -227,8 +227,8 @@ struct read_as<array>
     }
 
     array result;
-    result.reserve(items);
-    for (int index = 0; index < items; ++index)
+    result.reserve(items - i);
+    for (int index = i; index < items; ++index)
     {
       result.push_back(SvREFCNT_inc(ST(index)));
     }
@@ -241,7 +241,8 @@ struct read_as<hash>
 {
   static bool check(PerlInterpreter* my_perl, int i, int ax, int items)
   {
-    return items % 2 == 0 && SvTYPE(ST(0)) == SVt_PV;
+    int remaining = items - i;
+    return remaining > 0 && remaining % 2 == 0 && SvTYPE(ST(i)) == SVt_PV;
   }
 
   static hash get(PerlInterpreter* my_perl, int i, int ax, int items)
@@ -252,7 +253,7 @@ struct read_as<hash>
     }
 
     hash result;
-    for (int index = 0; index < items; index += 2)
+    for (int index = i; index < items; index += 2)
     {
       const char* key = SvPV_nolen(ST(index));
       result[key] = SvREFCNT_inc(ST(index + 1));

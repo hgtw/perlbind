@@ -46,6 +46,12 @@ target_include_directories(perlbind PUBLIC
   $<INSTALL_INTERFACE:include>)
 
 option(PERLBIND_BUILD_TESTS "Build tests" OFF)
+option(PERLBIND_ENABLE_ASAN "Build with address sanitizer" OFF)
+
+if(PERLBIND_ENABLE_ASAN)
+  target_compile_options(perlbind PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+  target_link_options(perlbind PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+endif()
 
 if(PERLBIND_BUILD_TESTS)
   enable_testing()

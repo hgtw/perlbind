@@ -30,6 +30,12 @@ function(add_tests)
 
   add_executable(${target_name} ${TEST_SOURCES})
   add_test(NAME ${target_name} COMMAND ${target_name})
+
+  if(PERLBIND_ENABLE_ASAN)
+    target_compile_options(${target_name} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+    target_link_options(${target_name} PRIVATE -fsanitize=address -fno-omit-frame-pointer)
+  endif()
+
   target_link_libraries(${target_name} PRIVATE perlbind ${PERL_LIBRARY} Catch2::Catch2)
   target_compile_definitions(${target_name} PRIVATE ${ARGV0})
 

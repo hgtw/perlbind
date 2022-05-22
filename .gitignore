@@ -5,6 +5,9 @@
 !LICENSE
 !README.md
 
+!.github/
+!.github/**
+
 !doc/
 !doc/**
 

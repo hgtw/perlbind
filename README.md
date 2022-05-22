@@ -1,5 +1,7 @@
 
 # Perlbind Library
+[![linux](https://github.com/hgtw/perlbind/actions/workflows/linux.yml/badge.svg)](https://github.com/hgtw/perlbind/actions/workflows/linux.yml)
+[![windows](https://github.com/hgtw/perlbind/actions/workflows/windows.yml/badge.svg)](https://github.com/hgtw/perlbind/actions/workflows/windows.yml)
 
 This is a C++14 binding library for perl. It can be used as an alternative to writing XS for embedding perl in C++ projects.
 

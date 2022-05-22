@@ -1,0 +1,50 @@
+name: linux
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        std: [14, 17]
+        build-type: [Release, Debug]
+        exclude:
+          - std: 17
+            build-type: Debug
+
+    name: build (C++${{matrix.std}}) (${{matrix.build-type}})
+
+    env:
+      ASAN_OPTIONS: fast_unwind_on_malloc=0
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up cache
+      uses: actions/cache@v3
+      with:
+        path: |
+          build/_deps
+          build/generated-includes
+        key: ${{ runner.os }}-build-${{ matrix.build-type }}-${{ matrix.std }}-${{ secrets.CACHE_VERSION }}
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DPERLBIND_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=${{matrix.build-type}} -DCMAKE_CXX_STANDARD=${{matrix.std}}
+
+    - name: Configure CMake (Enable ASan for Debug)
+      if: ${{ matrix.build-type == 'Debug' }}
+      run: cmake -B ${{github.workspace}}/build -DPERLBIND_ENABLE_ASAN=ON
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{matrix.build-type}} -j 2
+
+    - name: Run Tests
+      working-directory: ${{github.workspace}}/build
+      run: ctest --output-on-failure -C ${{matrix.build-type}}

@@ -87,10 +87,12 @@ struct function : public function_base, function_traits<T>
   {
     if (!function::is_vararg && stack.size() != function::stack_arity)
     {
-      auto sig = function::sig_t::str();
+      using sig = typename function::sig_t;
       int count = std::is_member_function_pointer<T>::value ? stack.size() - 1 : stack.size();
-      Perl_croak(aTHX_ "'%s(%s)' called with %d argument(s), expected %d\n argument(s): (%s)\n",
-                 stack.name().c_str(), sig.c_str(), count, function::arity, stack.types().c_str());
+      SV* err = newSVpvf("'%s(%s)' called with %d argument(s), expected %d\n argument(s): (%s)\n",
+                         stack.name().c_str(), sig::str().c_str(), count, function::arity, stack.types().c_str());
+
+      Perl_croak_sv(aTHX_ sv_2mortal(err));
     }
 
     try

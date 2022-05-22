@@ -56,15 +56,17 @@ void package::xsub(PerlInterpreter* my_perl, CV* cv)
     }
   }
 
-  std::string overloads;
+  // use mortal SV for string to avoid leak after croak
+  SV* err = newSVpvf("no overload of '%s' matched the %d argument(s):\n (%s)\ncandidates:\n ",
+                     stack.name().c_str(), stack.size(), stack.types().c_str());
+
   for (const auto& function : functions)
   {
     auto func = INT2PTR(detail::function_base*, SvIV(function.sv()));
-    overloads += func->get_signature() + "\n ";
+    Perl_sv_catpvf(aTHX_ err, "%s\n ", func->get_signature().c_str());
   }
 
-  Perl_croak(aTHX_ "no overload of '%s' matched the %d argument(s):\n(%s)\ncandidates:\n %s",
-             stack.name().c_str(), stack.size(), stack.types().c_str(), overloads.c_str());
+  Perl_croak_sv(aTHX_ sv_2mortal(err));
 }
 
 } // namespace perlbind

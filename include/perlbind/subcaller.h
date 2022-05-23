@@ -63,7 +63,8 @@ private:
 
     SPAGAIN; // refresh local sp since call may reallocate stack for scalar returns
 
-    SV* err = ERRSV;
+    // ERRSV doesn't work in perl 5.28+ here for unknown reasons
+    SV* err = get_sv("@", 0);
     if (SvTRUE(err))
     {
       throw std::runtime_error("Perl error: " + std::string(SvPV_nolen(err)));

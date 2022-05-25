@@ -737,7 +737,7 @@ TEST_CASE("array iterator ref count", "[types]")
   REQUIRE(SvREFCNT(src) == 1);
   {
     auto it = arr.begin();
-    REQUIRE(SvREFCNT(src) == 1);
+    REQUIRE(SvREFCNT(src) == 2); // begin() fetches first item
     REQUIRE((*it).sv() == src);
   }
   REQUIRE(SvREFCNT(src) == 1);
@@ -782,7 +782,7 @@ TEST_CASE("hash iterator ref count", "[types]")
   REQUIRE(SvREFCNT(src) == 1);
   {
     auto it = table.begin();
-    REQUIRE(SvREFCNT(src) == 1);
+    REQUIRE(SvREFCNT(src) == 2); // begin() fetches first item
     REQUIRE((*it).second.sv() == src);
   }
   REQUIRE(SvREFCNT(src) == 1);

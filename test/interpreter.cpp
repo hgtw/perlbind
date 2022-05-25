@@ -115,3 +115,25 @@ TEST_CASE("typemap", "[interpreter][typemap]")
   REQUIRE(type_name != nullptr);
   REQUIRE(strcmp(type_name, "typemap_test") == 0);
 }
+
+TEST_CASE("multiple calls to xsub that croaks", "[subcaller][package][function]")
+{
+  // this test case is for an issue in msvc release builds where xsub croak
+  // unwinding would corrupt the stack due to the callback not being extern "C"
+  struct multicall
+  {
+    static void overloaded() {}
+    static void overloaded(int, int) {}
+  };
+
+  auto package = interp->new_package("multicall");
+  package.add("overloaded", (void(*)())&multicall::overloaded);
+  package.add("overloaded", (void(*)(int, int))&multicall::overloaded);
+
+  interp->eval(R"script(
+    sub testsub { multicall::overloaded('no compatible overload, croak'); }
+  )script");
+
+  REQUIRE_THROWS(interp->call_sub<int>("testsub"));
+  REQUIRE_THROWS(interp->call_sub<int>("testsub"));
+}

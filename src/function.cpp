@@ -2,14 +2,14 @@
 
 namespace perlbind { namespace detail {
 
-const MGVTBL function_base::mgvtbl = { 0, 0, 0, 0, gc, 0, 0, 0 };
-
-int function_base::gc(pTHX_ SV* sv, MAGIC* mg)
+extern "C" int gc(pTHX_ SV* sv, MAGIC* mg)
 {
   auto pfunc = INT2PTR(perlbind::detail::function_base*, SvIV(sv));
   delete pfunc;
   return 1;
 }
+
+const MGVTBL function_base::mgvtbl = { 0, 0, 0, 0, gc, 0, 0, 0 };
 
 } // namespace detail
 } // namespace perlbind

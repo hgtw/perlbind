@@ -43,7 +43,6 @@ public:
   }
 
 private:
-  static void xsub(PerlInterpreter* my_perl, CV* cv);
   void add_impl(const char* name, detail::function_base* function);
 
   std::string m_name;

@@ -2,6 +2,10 @@
 
 namespace perlbind {
 
+namespace detail {
+  extern "C" void xsub(PerlInterpreter* my_perl, CV* cv);
+} // namespace detail
+
 void package::add_impl(const char* name, detail::function_base* function)
 {
   std::string export_name = m_name + "::" + name;
@@ -14,7 +18,7 @@ void package::add_impl(const char* name, detail::function_base* function)
   CV* cv = get_cv(export_name.c_str(), 0);
   if (!cv)
   {
-    cv = newXS(export_name.c_str(), &package::xsub, __FILE__);
+    cv = newXS(export_name.c_str(), &detail::xsub, __FILE__);
     CvXSUBANY(cv).any_ptr = function;
   }
   else // function exists, remove target to search overloads when called
@@ -33,7 +37,7 @@ void package::add_impl(const char* name, detail::function_base* function)
   overloads.push_back(sv); // giving only ref to GV array
 }
 
-void package::xsub(PerlInterpreter* my_perl, CV* cv)
+extern "C" void detail::xsub(PerlInterpreter* my_perl, CV* cv)
 {
   detail::xsub_stack stack(my_perl, cv);
 

@@ -239,3 +239,36 @@ TEST_CASE("exception in function binding call", "[function]")
 
   REQUIRE_THROWS(interp->eval("foo::catchbar(1);"));
 }
+
+TEST_CASE("overload array should not leak after xsub croak", "[package][function]")
+{
+  struct overloads
+  {
+    static void foo() { throw std::runtime_error("throwing"); }
+    static void foo(int,int,int) { }
+  };
+
+  auto my_perl = interp->get();
+  auto package = interp->new_package("overloads");
+  package.add("foo", (void(*)())&overloads::foo);
+  package.add("foo", (void(*)(int,int,int))&overloads::foo);
+
+  interp->eval(R"script(
+    sub croaksub { overloads::foo('croak', 'croak'); }
+    sub throwsub { overloads::foo(); }
+    sub nocroaksub { overloads::foo(1,1,1); }
+  )script");
+
+  AV* av = GvAV(CvGV(get_cv("overloads::foo", 0)));
+  REQUIRE(SvREFCNT(av) == 1);
+
+  // no overload found
+  REQUIRE_THROWS(interp->call_sub<int>("croaksub"));
+  REQUIRE(SvREFCNT(av) == 1);
+  // overload found but throws in call
+  REQUIRE_THROWS(interp->call_sub<int>("throwsub"));
+  REQUIRE(SvREFCNT(av) == 1);
+  // overload found and doesn't croak
+  REQUIRE_NOTHROW(interp->call_sub<int>("nocroaksub"));
+  REQUIRE(SvREFCNT(av) == 1);
+}

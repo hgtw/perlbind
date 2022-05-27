@@ -73,7 +73,7 @@ struct pusher
     const char* type_name = detail::typemap::get_name<T>(my_perl);
     if (!type_name)
     {
-      Perl_croak(aTHX_ "cannot push unregistered pointer of type '%s'", util::type_name<T>::str().c_str());
+      throw std::runtime_error("cannot push unregistered pointer of type '" + util::type_name<T>::str() + "'");
     }
 
     SV* sv = sv_newmortal();

@@ -4,7 +4,7 @@
 
 namespace perlbind { namespace stack {
 
-// perl stack reader to convert types, croaks if perl stack value isn't type compatible
+// perl stack reader to convert types, throws if perl stack value isn't type compatible
 template <typename T, typename = void>
 struct read_as;
 
@@ -26,7 +26,7 @@ struct read_as<T, std::enable_if_t<std::is_integral<T>::value || std::is_enum<T>
   {
     if (!check(my_perl, i, ax, items))
     {
-      Perl_croak(aTHX_ "expected argument %d to be an integer", i+1);
+      throw std::runtime_error("expected argument " + std::to_string(i+1) + " to be an integer");
     }
     return static_cast<T>(SvIV(ST(i))); // unsigned and bools casted
   }
@@ -50,7 +50,7 @@ struct read_as<T, std::enable_if_t<std::is_floating_point<T>::value>>
   {
     if (!check(my_perl, i, ax, items))
     {
-      Perl_croak(aTHX_ "expected argument %d to be a floating point", i+1);
+      throw std::runtime_error("expected argument " + std::to_string(i+1) + " to be a floating point");
     }
     return static_cast<T>(SvNV(ST(i)));
   }
@@ -72,7 +72,7 @@ struct read_as<const char*>
   {
     if (!check(my_perl, i, ax, items))
     {
-      Perl_croak(aTHX_ "expected argument %d to be a string", i+1);
+      throw std::runtime_error("expected argument " + std::to_string(i+1) + " to be a string");
     }
     return static_cast<const char*>(SvPV_nolen(ST(i)));
   }
@@ -95,7 +95,7 @@ struct read_as<void*>
   {
     if (!check(my_perl, i, ax, items))
     {
-      Perl_croak(aTHX_ "expected argument %d to be a reference to an object", i+1);
+      throw std::runtime_error("expected argument " + std::to_string(i+1) + " to be a reference to an object");
     }
 
     IV tmp = SvIV(SvRV(ST(i)));
@@ -120,9 +120,9 @@ struct read_as<T, std::enable_if_t<std::is_pointer<T>::value>>
       const char* type_name = detail::typemap::get_name<T>(my_perl);
       if (!type_name)
       {
-        Perl_croak(aTHX_ "expected argument %d to be a reference to an unregistered type (method unusable)", i+1);
+        throw std::runtime_error("expected argument " + std::to_string(i+1) + " to be a reference to an unregistered type (method unusable)");
       }
-      Perl_croak(aTHX_ "expected argument %d to be a reference to an object of type '%s'", i+1, type_name);
+      throw std::runtime_error("expected argument " + std::to_string(i+1) + " to be a reference to an object of type '" + type_name + "'");
     }
 
     IV tmp = SvIV(SvRV(ST(i)));
@@ -165,7 +165,7 @@ struct read_as<SV*>
   {
     if (!check(my_perl, i, ax, items))
     {
-      Perl_croak(aTHX_ "expected argument %d to be valid scalar value", i+1);
+      throw std::runtime_error("expected argument " + std::to_string(i+1) + " to be valid scalar value");
     }
     return ST(i);
   }
@@ -184,7 +184,7 @@ struct read_as<scalar>
   {
     if (!check(my_perl, i, ax, items))
     {
-      Perl_croak(aTHX_ "expected argument %d to be a scalar or reference to a scalar", i+1);
+      throw std::runtime_error("expected argument " + std::to_string(i+1) + " to be a scalar or reference to a scalar");
     }
     return SvROK(ST(i)) ? SvREFCNT_inc(SvRV(ST(i))) : SvREFCNT_inc(ST(i));
   }
@@ -202,7 +202,7 @@ struct read_as<reference>
   {
     if (!check(my_perl, i, ax, items))
     {
-      Perl_croak(aTHX_ "expected argument %d to be a reference", i+1);
+      throw std::runtime_error("expected argument " + std::to_string(i+1) + " to be a reference");
     }
     // take ownership of a reference to the RV itself (avoid reference to a reference)
     reference result;
@@ -223,7 +223,7 @@ struct read_as<array>
   {
     if (!check(my_perl, i, ax, items))
     {
-      Perl_croak(aTHX_ "expected argument %d to be start of a perl array", i+1);
+      throw std::runtime_error("expected argument " + std::to_string(i+1) + " to be start of a perl array");
     }
 
     array result;
@@ -249,7 +249,7 @@ struct read_as<hash>
   {
     if (!check(my_perl, i, ax, items))
     {
-      Perl_croak(aTHX_ "expected argument %d to be start of a perl hash", i+1);
+      throw std::runtime_error("expected argument " + std::to_string(i+1) + " to be start of a perl hash");
     }
 
     hash result;

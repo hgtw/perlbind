@@ -39,38 +39,50 @@ void package::add_impl(const char* name, detail::function_base* function)
 
 extern "C" void detail::xsub(PerlInterpreter* my_perl, CV* cv)
 {
-  detail::xsub_stack stack(my_perl, cv);
-
-  auto target = static_cast<detail::function_base*>(CvXSUBANY(cv).any_ptr);
-  if (target)
+  // croak does not unwind so inner calls throw exceptions to prevent leaks
+  try
   {
-    return target->call(stack);
-  }
+    detail::xsub_stack stack(my_perl, cv);
 
-  // find first compatible overload
-  AV* av = GvAV(CvGV(cv));
-
-  array functions = reinterpret_cast<AV*>(SvREFCNT_inc(av));
-  for (const auto& function : functions)
-  {
-    auto func = INT2PTR(detail::function_base*, SvIV(function.sv()));
-    if (func->is_compatible(stack))
+    auto target = static_cast<detail::function_base*>(CvXSUBANY(cv).any_ptr);
+    if (target)
     {
-      return func->call(stack);
+      return target->call(stack);
     }
+
+    // find first compatible overload
+    AV* av = GvAV(CvGV(cv));
+
+    array functions = reinterpret_cast<AV*>(SvREFCNT_inc(av));
+    for (const auto& function : functions)
+    {
+      auto func = INT2PTR(detail::function_base*, SvIV(function.sv()));
+      if (func->is_compatible(stack))
+      {
+        return func->call(stack);
+      }
+    }
+
+    SV* err = newSVpvf("no overload of '%s' matched the %d argument(s):\n (%s)\ncandidates:\n ",
+                       stack.name().c_str(), stack.size(), stack.types().c_str());
+
+    for (const auto& function : functions)
+    {
+      auto func = INT2PTR(detail::function_base*, SvIV(function.sv()));
+      Perl_sv_catpvf(aTHX_ err, "%s\n ", func->get_signature().c_str());
+    }
+
+    err = sv_2mortal(err);
+    throw std::runtime_error(SvPV_nolen(err));
   }
-
-  // use mortal SV for string to avoid leak after croak
-  SV* err = newSVpvf("no overload of '%s' matched the %d argument(s):\n (%s)\ncandidates:\n ",
-                     stack.name().c_str(), stack.size(), stack.types().c_str());
-
-  for (const auto& function : functions)
+  catch (std::exception& e)
   {
-    auto func = INT2PTR(detail::function_base*, SvIV(function.sv()));
-    Perl_sv_catpvf(aTHX_ err, "%s\n ", func->get_signature().c_str());
+    Perl_croak(aTHX_ "%s", e.what());
   }
-
-  Perl_croak_sv(aTHX_ sv_2mortal(err));
+  catch (...)
+  {
+    Perl_croak(aTHX_ "unhandled exception");
+  }
 }
 
 } // namespace perlbind

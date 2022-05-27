@@ -10,6 +10,20 @@ a function's parameters before it is called. Pointers will not be `nullptr`
 parameters (depending on config options). If a function is called with invalid
 arguments then it croaks with an error.
 
+## Throwing Errors
+
+Function bindings should throw a `std::runtime_error` exception if they need to
+abort with an error. This is to make sure C++ stack unwinding occurs to destroy
+any C++ objects. Using the `Perl_croak` api would not be safe because it will
+jump back to perl without freeing C++ objects.
+
+For example, if a function binding has a `std::string` argument and then croaks,
+control will jump back to perl and the `std::string` will never be destroyed.
+
+> There is no guarantee that the library will not have any C++ objects that
+> need to be destroyed after the function call. The library catches exceptions
+> and croaks after it unwinds the stack.
+
 # Configuration Options
 
 By default scalar integers and floats are not distinguished in function
@@ -115,7 +129,7 @@ values and to verify object pointer arguments in function bindings.
 
 > If a type is not registered then any function bindings that return or use a
 > pointer to an object of that type will be unusable. Unregistered types are
-> only detectable at runtime and will croak if detected.
+> only detectable at runtime and will throw if detected.
 
 # Types
 
@@ -136,7 +150,7 @@ Wrapper around a perl HV which associates key strings with scalar values.
 Using this as a parameter in function bindings bypasses the strict type check for
 an expected pointer type. If the argument is not a valid reference deriving from
 the specified pointer type then a `nullptr` is passed instead. This differs from
-default behavior which would either croak or treat the function as incompatible
+default behavior which would either throw or treat the function as incompatible
 (for overloads) due to an invalid expected argument.
 
 > Function bindings may only have a single `perlbind::array` or `perlbind::hash`

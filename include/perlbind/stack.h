@@ -54,7 +54,7 @@ public:
     return check_stack(std::forward<Tuple>(types), make_sequence());
   }
 
-  // returns tuple of converted perl stack arguments, croaks on an incompatible type
+  // returns tuple of converted perl stack arguments, throws on an incompatible type
   template <typename Tuple>
   auto convert_stack(Tuple&& types)
   {

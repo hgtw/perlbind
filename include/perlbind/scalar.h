@@ -193,10 +193,10 @@ struct reference  : public scalar
   template <typename T, std::enable_if_t<std::is_base_of<type_base, T>::value, bool> = true>
   reference(T&& value) noexcept : scalar(value.my_perl, nullptr) { m_sv = newRV_inc(value); }
 
-  template <typename T, std::enable_if_t<detail::is_any<T, SV*, AV, HV*>::value, bool> = true>
+  template <typename T, std::enable_if_t<detail::is_any<T, SV*, AV*, HV*>::value, bool> = true>
   reference(T& value) noexcept { reset(newRV_inc(reinterpret_cast<SV*>(value))); }
 
-  template <typename T, std::enable_if_t<detail::is_any<T, SV*, AV, HV*>::value, bool> = true>
+  template <typename T, std::enable_if_t<detail::is_any<T, SV*, AV*, HV*>::value, bool> = true>
   reference(T&& value) noexcept { reset(newRV_noinc(reinterpret_cast<SV*>(value))); }
 
   SV* operator*() { return SvRV(m_sv); }

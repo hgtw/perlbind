@@ -627,31 +627,6 @@ TEST_CASE("reading nested hash", "[types]")
   REQUIRE(SvREFCNT(h1.sv()) == 1);
 }
 
-TEST_CASE("array range loop", "[types]")
-{
-  perlbind::hash h;
-  {
-    perlbind::array src;
-    src.push_back(1);
-    src.push_back(perlbind::reference(h));
-    src.push_back(perlbind::reference(h));
-    src.push_back(perlbind::reference(h));
-    src.push_back("str");
-
-    int count = 0;
-    for (perlbind::scalar item : src)
-    {
-      if (item.is_hash_ref())
-      {
-        REQUIRE(SvREFCNT(*item) == 5); // each should be 1x orig, 3x refs, 1x loop
-        ++count;
-      }
-    }
-    REQUIRE(count == 3);
-  }
-  REQUIRE(SvREFCNT(h.sv()) == 1);
-}
-
 TEST_CASE("hash proxy with non-existent keys", "[types]")
 {
   // hv_fetch/av_fetch will return an undefined value for non-existent keys
@@ -684,7 +659,7 @@ TEST_CASE("array iterator ref count", "[types]")
   REQUIRE(SvREFCNT(src) == 1);
 }
 
-TEST_CASE("array iterator range loop", "[types]")
+TEST_CASE("array range loops", "[types]")
 {
   perlbind::array arr;
   arr.push_back(100);
@@ -709,6 +684,31 @@ TEST_CASE("array iterator range loop", "[types]")
       it = 300;
     }
     REQUIRE(static_cast<int>(arr[0]) == 300);
+  }
+
+  SECTION("array containing references to hash", "[types]")
+  {
+    perlbind::hash h;
+    {
+      perlbind::array src;
+      src.push_back(1);
+      src.push_back(perlbind::reference(h));
+      src.push_back(perlbind::reference(h));
+      src.push_back(perlbind::reference(h));
+      src.push_back("str");
+
+      int count = 0;
+      for (perlbind::scalar item : src)
+      {
+        if (item.is_hash_ref())
+        {
+          REQUIRE(SvREFCNT(*item) == 5); // each should be 1x orig, 3x refs, 1x loop
+          ++count;
+        }
+      }
+      REQUIRE(count == 3);
+    }
+    REQUIRE(SvREFCNT(h.sv()) == 1);
   }
 
   REQUIRE(SvREFCNT(src) == 1);

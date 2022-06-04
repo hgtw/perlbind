@@ -167,15 +167,13 @@ TEST_CASE("overloads", "[package][function]")
   REQUIRE((get_sv("result5", 0) != nullptr && SvIV(get_sv("result5", 0)) == 5));
 #endif
 
-  SECTION("non-matching overload")
-  {
+  // non-matching overload
 #ifdef PERLBIND_NO_STRICT_SCALAR_TYPES
-    REQUIRE_NOTHROW(interp->eval("$overload4 = foo::bar(20, 10);"));
-    REQUIRE_THROWS(interp->eval("$overload4 = foo::bar(20, 10, 5);"));
+  REQUIRE_NOTHROW(interp->eval("$overload4 = foo::bar(20, 10);"));
+  REQUIRE_THROWS(interp->eval("$overload4 = foo::bar(20, 10, 5);"));
 #else
-    REQUIRE_THROWS(interp->eval("$overload4 = foo::bar(20, 10);"));
+  REQUIRE_THROWS(interp->eval("$overload4 = foo::bar(20, 10);"));
 #endif
-  }
 }
 
 TEST_CASE("overload priority with array parameter", "[package][function]")

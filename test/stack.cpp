@@ -49,6 +49,65 @@ TEST_CASE("push and read enums", "[stack]")
   }
 }
 
+TEST_CASE("push C string to perl", "[stack]")
+{
+  struct foo
+  {
+    static const char* get_str() { return "str"; }
+  };
+
+  auto my_perl = interp->get();
+  auto package = interp->new_package("foo");
+  package.add("get_str", &foo::get_str);
+
+  REQUIRE_NOTHROW(interp->eval(R"script(
+    $result = foo::get_str();
+  )script"));
+
+  REQUIRE(std::string(SvPV_nolen(get_sv("result", 0))) == "str");
+}
+
+TEST_CASE("read scalar reference from perl", "[stack][types]")
+{
+  struct foo
+  {
+    static int as_ref(perlbind::reference ref)
+    {
+      REQUIRE(ref.is_scalar_ref());
+      REQUIRE(SvREFCNT(ref.sv()) == 2); // stack and ours
+      REQUIRE(SvREFCNT(*ref) == 2); // original and stack
+
+      perlbind::scalar v = SvREFCNT_inc(*ref);
+      REQUIRE(static_cast<int>(v) == 12345);
+      REQUIRE(SvREFCNT(ref.sv()) == 2);
+      REQUIRE(SvREFCNT(*ref) == 3);
+      return 3500;
+    }
+    static int as_scalar(perlbind::scalar v)
+    {
+      REQUIRE(v.is_integer());
+      REQUIRE(static_cast<int>(v) == 12345);
+      REQUIRE(SvREFCNT(v.sv()) == 3);
+      return 3600;
+    }
+  };
+
+  auto my_perl = interp->get();
+
+  auto package = interp->new_package("foo");
+  package.add("as_scalar", &foo::as_scalar);
+  package.add("as_ref", &foo::as_ref);
+
+  REQUIRE_NOTHROW(interp->eval(R"script(
+    $s = 12345;
+    $result1 = foo::as_ref(\$s);
+    $result2 = foo::as_scalar(\$s);
+  )script"));
+
+  REQUIRE((get_sv("result1", 0) != nullptr && SvIV(get_sv("result1", 0)) == 3500));
+  REQUIRE((get_sv("result2", 0) != nullptr && SvIV(get_sv("result2", 0)) == 3600));
+}
+
 TEST_CASE("push array to perl stack", "[stack][types]")
 {
   struct foo

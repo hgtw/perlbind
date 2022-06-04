@@ -18,8 +18,8 @@ namespace perlbind {
 interpreter::interpreter()
   : m_is_owner(true)
 {
-  const char* argv[] = { "", "-ew", "0" };
-  constexpr int argc = sizeof(argv) / sizeof(*argv);
+  const char* argv[] = { "", "-ew", "0", nullptr };
+  constexpr int argc = (sizeof(argv) / sizeof(*argv)) - 1;
   init(argc, argv);
 }
 

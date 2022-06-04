@@ -25,6 +25,28 @@ TEST_CASE("scalar construction", "[types]")
   REQUIRE(SvREFCNT(value.sv()) == 1);
 }
 
+TEST_CASE("scalar copy construction", "[types]")
+{
+  perlbind::scalar a = 1;
+  perlbind::scalar b = a;
+  REQUIRE(a.sv() != b.sv());
+  REQUIRE(SvREFCNT(a.sv()) == 1);
+  REQUIRE(SvREFCNT(b.sv()) == 1);
+  REQUIRE(b.as<int>() == 1);
+}
+
+TEST_CASE("scalar move construction", "[types]")
+{
+  perlbind::scalar a = 1;
+  SV* orig = a.sv();
+
+  perlbind::scalar b = std::move(a);
+  REQUIRE(SvREFCNT(b.sv()) == 1);
+  REQUIRE(a.sv() != orig);
+  REQUIRE(b.sv() == orig);
+  REQUIRE(b.as<int>() == 1);
+}
+
 TEST_CASE("typecasts from scalar", "[types]")
 {
   perlbind::scalar value;
@@ -283,6 +305,36 @@ TEST_CASE("arrays", "[types]")
   REQUIRE(arr[2].as<float>() == 3.0f);
 }
 
+TEST_CASE("array copy construction")
+{
+  perlbind::array a;
+  a.push_back(1);
+
+  perlbind::array b = a;
+  REQUIRE(SvREFCNT(a.sv()) == 1);
+  REQUIRE(SvREFCNT(b.sv()) == 1);
+  REQUIRE(a.sv() != b.sv());
+  REQUIRE(a[0].sv() != b[0].sv());
+  REQUIRE(a[0].as<int>() == b[0].as<int>());
+}
+
+TEST_CASE("array move construction")
+{
+  perlbind::array a;
+  a.push_back(1);
+
+  SV* orig = a.sv();
+  SV* orig_el = a[0].sv();
+
+  perlbind::array b = std::move(a);
+  REQUIRE(SvREFCNT(b.sv()) == 1);
+  REQUIRE(a.sv() != orig);
+  REQUIRE(b.sv() == orig);
+  REQUIRE(a[0].sv() != orig_el);
+  REQUIRE(b[0].sv() == orig_el);
+  REQUIRE(b[0].as<int>() == 1);
+}
+
 TEST_CASE("array index proxy", "[types]")
 {
   auto my_perl = interp->get();
@@ -419,6 +471,36 @@ TEST_CASE("hash", "[types]")
 
   std::string s = h["Key1"];
   REQUIRE(s == "value");
+}
+
+TEST_CASE("hash copy construction")
+{
+  perlbind::hash a;
+  a["foo"] = 1;
+
+  perlbind::hash b = a;
+  REQUIRE(SvREFCNT(a.sv()) == 1);
+  REQUIRE(SvREFCNT(b.sv()) == 1);
+  REQUIRE(a.sv() != b.sv());
+  REQUIRE(a["foo"].sv() != b["foo"].sv());
+  REQUIRE(a["foo"].as<int>() == b["foo"].as<int>());
+}
+
+TEST_CASE("hash move construction")
+{
+  perlbind::hash a;
+  a["foo"] = 1;
+
+  SV* orig = a.sv();
+  SV* orig_el = a["foo"].sv();
+
+  perlbind::hash b = std::move(a);
+  REQUIRE(SvREFCNT(b.sv()) == 1);
+  REQUIRE(a.sv() != orig);
+  REQUIRE(b.sv() == orig);
+  REQUIRE(a["foo"].sv() != orig_el);
+  REQUIRE(b["foo"].sv() == orig_el);
+  REQUIRE(b["foo"].as<int>() == 1);
 }
 
 TEST_CASE("hash construction from reference", "[types]")

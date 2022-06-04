@@ -107,9 +107,9 @@ private:
   void push_args_impl(Args&&... args) {}
 
   template <typename T, typename... Args>
-  void push_args_impl(T value, Args&&... args)
+  void push_args_impl(T&& value, Args&&... args)
   {
-    push(value);
+    push(std::forward<T>(value));
     push_args(std::forward<Args>(args)...);
   }
 };

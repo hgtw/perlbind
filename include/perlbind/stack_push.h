@@ -110,7 +110,7 @@ private:
   void push_args_impl(T&& value, Args&&... args)
   {
     push(std::forward<T>(value));
-    push_args(std::forward<Args>(args)...);
+    push_args_impl(std::forward<Args>(args)...);
   }
 };
 

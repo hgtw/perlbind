@@ -38,7 +38,8 @@ struct pusher
     for (int i = 0; i < count; ++i)
     {
       // mortalizes one reference to array element to avoid copying
-      PUSHs(sv_2mortal(SvREFCNT_inc(value[i].sv())));
+      SV** sv = av_fetch(static_cast<AV*>(value), i, true);
+      mPUSHs(SvREFCNT_inc(*sv));
     }
     m_pushed += count;
   }

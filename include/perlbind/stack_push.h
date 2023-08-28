@@ -28,8 +28,8 @@ struct pusher
     ++m_pushed;
   }
   void push(const std::string& value) { mPUSHp(value.c_str(), value.size()); ++m_pushed; }
-  void push(scalar value) { mPUSHs(value.release()); ++m_pushed; };
-  void push(reference value) { mPUSHs(value.release()); ++m_pushed; };
+  void push(scalar value) { mPUSHs(value.release()); ++m_pushed; }
+  void push(reference value) { mPUSHs(value.release()); ++m_pushed; }
 
   void push(array value)
   {
